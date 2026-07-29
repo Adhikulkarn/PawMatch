@@ -2,4 +2,4 @@ from django.apps import AppConfig
 
 
 class SheltersConfig(AppConfig):
-    name = 'shelters'
+    name = 'apps.shelters'
