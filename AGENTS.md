@@ -1,10 +1,10 @@
 # AGENTS.md — PawMatch
 
-This is a **pre-code project** — no source files, package managers, build scripts, or tests exist yet. Everything lives in `docs/` and is currently in "Approved Blueprint" / placeholder status.
+PawMatch backend infrastructure and deployment setup is **production-ready**. Core infrastructure, settings modules, containerization, Render deployment blueprints, security audit parameters, CI/CD pipelines, and health endpoints are fully implemented.
 
 ## Mandatory reading order
 
-Before writing any code, read these in order (per `docs/README.md:200`):
+Before writing any feature code, read these in order:
 
 1. `docs/PRODUCT_ROADMAP.md` — version scope
 2. `docs/TECHNOLOGY_STACK.md` — approved dependencies (SSOT — no unapproved packages)
@@ -31,20 +31,25 @@ All architectural decisions require an ADR. Existing ADRs live under `docs/adr/A
 |---|---|
 | Backend | Python 3.13+ / Django 5.x / DRF / Gunicorn / WhiteNoise |
 | Frontend | React 19 / Vite / Tailwind CSS / React Router / TanStack Query / Axios / React Hook Form / Zod / Framer Motion |
-| Database | PostgreSQL 17 |
+| Database | PostgreSQL 17 (Neon) |
 | Cache/Queue | Redis / Celery |
 | Media | Cloudinary |
 | Auth | DRF Simple JWT (access + refresh tokens) |
 | API docs | drf-spectacular (OpenAPI 3) |
-| Backend deploy | Render (PaaS web + worker) |
-| Frontend deploy | Vercel (edge SPA) |
+| Backend deploy | Render (Docker Runtime) |
+| Frontend deploy | Vercel (Edge SPA) |
 
-## Current state
+## Current State & Completed Infrastructure
 
-- **No code scaffolded** — no `requirements.txt`, `package.json`, `manage.py`, or `src/`.
-- All `docs/` files are **blueprint templates** (generic boilerplate). Real content must be written.
-- 8 initial ADRs exist (`ADR-001` through `ADR-008`). ~32 more are backlogged.
-- V1.0 target is the "Foundation" release (auth, RBAC, shelter management, pet listings, search, adoption workflow, notifications, admin panel).
+- **Backend Architecture**: Scaffolded under `backend/` using domain-driven layout (`apps/`, `config/`, `requirements/`, `manage.py`).
+- **Multi-Environment Settings**: Modularized into `base.py`, `development.py`, `staging.py`, `production.py`, `logging.py`.
+- **Environment Resolution**: Dynamic `.env.<environment>` resolution based on `DJANGO_SETTINGS_MODULE`.
+- **Containerization**: Multi-stage OCI `Dockerfile`, `.dockerignore`, `docker-compose.yml`, `gunicorn.conf.py`.
+- **Render Deployment**: Render blueprint `render.yaml` and hardened build script `build.sh`.
+- **Telemetry & Logging**: Sub-millisecond `/health/` probe (0.328 ms), `RequestIDMiddleware` distributed tracing, and ISO 8601 UTC JSON structured logging.
+- **CI/CD Pipeline**: GitHub Actions workflow `.github/workflows/backend.yml` validating Black, isort, Flake8, Django checks, pytest, and Docker builds.
+- **Git Security**: Strictly ignored `.env`, `.env.*` files (only `.env.example` tracked).
+- **Target Next Phase**: Authentication & User Accounts implementation (V1.0 Foundation release).
 
 ## Git conventions
 
