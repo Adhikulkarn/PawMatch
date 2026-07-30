@@ -1,21 +1,42 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# PawMatch Render Build Script
-# Executes installation, static collection, and database migrations on deploy
+# PawMatch Enterprise Render Build Script
+# Hardened Deployment Automation with Error Trapping & Safety Probes
 # ==============================================================================
 
+# Strict Bash Execution Flags for Production Safety
 set -o errexit
+set -o pipefail
+set -o nounset
 
-echo "==> Upgrading pip..."
-pip install --upgrade pip
+# Timestamped Logger for Render Dashboard Telemetry
+log() {
+    echo "[$(date +'%Y-%m-%d %H:%M:%S')] [PAWMATCH BUILD] $1"
+}
 
-echo "==> Installing production dependencies..."
-pip install -r requirements/production.txt
+# Error Trap Handler for Failure Reporting
+trap 'log "CRITICAL ERROR: Build process failed at line $LINENO with exit code $?. Check stack trace above."' ERR
 
-echo "==> Collecting static files..."
-python manage.py collectstatic --noinput
+log "Starting PawMatch deployment pipeline..."
 
-echo "==> Executing database migrations..."
+# 1. Upgrade Package Manager
+log "Upgrading pip package installer..."
+python -m pip install --upgrade pip --quiet
+
+# 2. Install Dependencies
+log "Installing production dependencies from requirements/production.txt..."
+python -m pip install -r requirements/production.txt --quiet
+
+# 3. System & Security Validation Checks
+log "Executing Django system deployment checks..."
+python manage.py check --deploy
+
+# 4. WhiteNoise Static Asset Collection
+log "Collecting static assets..."
+python manage.py collectstatic --noinput --clear
+
+# 5. Database Schema Migration Safety Execution
+log "Applying database schema migrations..."
 python manage.py migrate --noinput
 
-echo "==> Build process completed successfully!"
+log "Deployment build pipeline completed successfully!"

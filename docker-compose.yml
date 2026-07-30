@@ -1,0 +1,89 @@
+# ==============================================================================
+# PawMatch Repository Root Docker Compose Blueprint
+# ==============================================================================
+
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: pawmatch_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.development
+      - PYTHONUNBUFFERED=1
+      - PYTHONDONTWRITEBYTECODE=1
+    volumes:
+      - ./backend:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+      - logs_volume:/app/logs
+    networks:
+      - pawmatch_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # ----------------------------------------------------------------------------
+  # Future Infrastructure Expansion Slots:
+  # ----------------------------------------------------------------------------
+  # postgres:
+  #   image: postgres:17-alpine
+  #   container_name: pawmatch_postgres
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: ${POSTGRES_DB:-pawmatch_dev}
+  #     POSTGRES_USER: ${POSTGRES_USER:-pawmatch_user}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pawmatch_password}
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - pawmatch_network
+  #
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: pawmatch_redis
+  #   restart: unless-stopped
+  #   ports:
+  #     - "6379:6379"
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - pawmatch_network
+  #
+  # celery_worker:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile
+  #   container_name: pawmatch_celery_worker
+  #   restart: unless-stopped
+  #   command: celery -A config worker --loglevel=info
+  #   env_file:
+  #     - ./backend/.env
+  #   networks:
+  #     - pawmatch_network
+  #   depends_on:
+  #     - backend
+  #     - redis
+
+networks:
+  pawmatch_network:
+    driver: bridge
+
+volumes:
+  static_volume:
+  media_volume:
+  logs_volume:
+  # postgres_data:
+  # redis_data:

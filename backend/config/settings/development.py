@@ -1,6 +1,7 @@
 """
 Development settings for PawMatch.
 """
+
 from .base import *
 
 DEBUG = True

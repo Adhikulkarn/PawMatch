@@ -1,5 +1,3 @@
-app_name = 'apps.audit_logs'
+app_name = "apps.audit_logs"
 
-urlpatterns = [
-
-]
+urlpatterns = []

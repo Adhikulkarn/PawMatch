@@ -1,9 +1,10 @@
 """
 Custom DRF exception handler for standardized error response structures.
 """
-from rest_framework.views import exception_handler
-from rest_framework.response import Response
+
 from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import exception_handler
 
 
 def custom_exception_handler(exc, context):
@@ -29,7 +30,11 @@ def custom_exception_handler(exc, context):
                 "type": exc.__class__.__name__,
                 "status_code": response.status_code,
                 "message": getattr(exc, "detail", str(exc)),
-                "details": response.data if isinstance(response.data, dict) else {"non_field_errors": response.data},
+                "details": (
+                    response.data
+                    if isinstance(response.data, dict)
+                    else {"non_field_errors": response.data}
+                ),
             },
         }
         response.data = custom_data

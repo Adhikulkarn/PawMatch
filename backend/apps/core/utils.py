@@ -1,6 +1,7 @@
 """
 Core infrastructure utility functions for PawMatch.
 """
+
 import os
 import uuid
 from typing import Any
@@ -18,4 +19,5 @@ def generate_unique_filename(instance: Any, filename: str) -> str:
 def generate_verification_code(length: int = 6) -> str:
     """Generates a numeric verification code."""
     import random
+
     return "".join([str(random.randint(0, 9)) for _ in range(length)])

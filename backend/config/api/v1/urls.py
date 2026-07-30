@@ -4,6 +4,7 @@ Version 1 router.
 Aggregates URL configs from every application.
 Each app owns its own api/urls.py — only routing is registered here.
 """
+
 from django.urls import include, path
 
 urlpatterns = [

@@ -1,8 +1,10 @@
 """
 Base Django settings for PawMatch project.
 """
+
 import os
 from pathlib import Path
+
 import environ
 
 # Base Directory
@@ -56,6 +58,7 @@ LOCAL_APPS = [
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
+    "apps.core.middleware.RequestIDMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "corsheaders.middleware.CorsMiddleware",
@@ -90,9 +93,7 @@ ASGI_APPLICATION = "config.asgi.application"
 # Database Configuration
 # Fallback to SQLite if DATABASE_URL is not set or empty
 DEFAULT_DB_URL = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
-DATABASES = {
-    "default": env.db("DATABASE_URL", default=DEFAULT_DB_URL)
-}
+DATABASES = {"default": env.db("DATABASE_URL", default=DEFAULT_DB_URL)}
 
 # Cache Configuration (Redis with LocalMemCache fallback)
 REDIS_URL = env.str("REDIS_URL", default="")
@@ -113,7 +114,9 @@ else:
 
 # Password Validation
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -146,13 +149,17 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # Email Configuration (Base Placeholders)
-EMAIL_BACKEND = env.str("EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend")
+EMAIL_BACKEND = env.str(
+    "EMAIL_BACKEND", default="django.core.mail.backends.smtp.EmailBackend"
+)
 EMAIL_HOST = env.str("EMAIL_HOST", default="localhost")
 EMAIL_PORT = env.int("EMAIL_PORT", default=587)
 EMAIL_HOST_USER = env.str("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = env.str("EMAIL_HOST_PASSWORD", default="")
 EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS", default=True)
-DEFAULT_FROM_EMAIL = env.str("DEFAULT_FROM_EMAIL", default="PawMatch <noreply@pawmatch.com>")
+DEFAULT_FROM_EMAIL = env.str(
+    "DEFAULT_FROM_EMAIL", default="PawMatch <noreply@pawmatch.com>"
+)
 
 # Django REST Framework (DRF) Configuration
 REST_FRAMEWORK = {
@@ -160,9 +167,7 @@ REST_FRAMEWORK = {
         "rest_framework_simplejwt.authentication.JWTAuthentication",
         "rest_framework.authentication.SessionAuthentication",
     ),
-    "DEFAULT_PERMISSION_CLASSES": (
-        "rest_framework.permissions.IsAuthenticated",
-    ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_PAGINATION_CLASS": "apps.core.pagination.StandardResultsSetPagination",
     "PAGE_SIZE": 20,
     "DEFAULT_FILTER_BACKENDS": (
@@ -188,5 +193,7 @@ CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 # Centralized Logging Setup
 from .logging import get_logging_config  # noqa: E402
+
 LOG_LEVEL = env.str("LOG_LEVEL", default="INFO")
-LOGGING = get_logging_config(BASE_DIR, LOG_LEVEL)
+LOG_FORMAT = env.str("LOG_FORMAT", default="json")
+LOGGING = get_logging_config(BASE_DIR, LOG_LEVEL, LOG_FORMAT)

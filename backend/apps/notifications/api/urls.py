@@ -1,5 +1,3 @@
-app_name = 'apps.notifications'
+app_name = "apps.notifications"
 
-urlpatterns = [
-
-]
+urlpatterns = []

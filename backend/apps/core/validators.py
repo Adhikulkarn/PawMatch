@@ -1,7 +1,9 @@
 """
 Core infrastructure field validators for PawMatch.
 """
+
 import re
+
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
@@ -13,7 +15,9 @@ def validate_phone_number(value: str) -> None:
     """Validates that a string adheres to E.164 international phone formatting."""
     if value and not PHONE_REGEX.match(value):
         raise ValidationError(
-            _("Phone number must be entered in E.164 format: '+1234567890' (up to 15 digits)."),
+            _(
+                "Phone number must be entered in E.164 format: '+1234567890' (up to 15 digits)."
+            ),
             code="invalid_phone_number",
         )
 

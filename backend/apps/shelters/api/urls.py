@@ -1,5 +1,3 @@
-app_name = 'apps.shelters'
+app_name = "apps.shelters"
 
-urlpatterns = [
-
-]
+urlpatterns = []

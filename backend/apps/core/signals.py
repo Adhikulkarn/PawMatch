@@ -1,6 +1,7 @@
 """
 Core infrastructure signals placeholder for PawMatch.
 """
+
 from django.dispatch import Signal
 
 # Custom infrastructure signals

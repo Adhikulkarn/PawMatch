@@ -1,13 +1,16 @@
 """
 Abstract database model mixins for PawMatch entities.
 """
+
 import uuid
+
 from django.db import models
 from django.utils import timezone
 
 
 class UUIDModel(models.Model):
     """Abstract base model using UUIDv4 as primary key."""
+
     id = models.UUIDField(
         primary_key=True,
         default=uuid.uuid4,
@@ -20,6 +23,7 @@ class UUIDModel(models.Model):
 
 class TimestampedModel(models.Model):
     """Abstract base model tracking creation and modification timestamps."""
+
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -29,6 +33,7 @@ class TimestampedModel(models.Model):
 
 class SoftDeleteModel(models.Model):
     """Abstract base model supporting soft deletion."""
+
     is_deleted = models.BooleanField(default=False, db_index=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
 

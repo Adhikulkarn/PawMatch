@@ -1,15 +1,19 @@
 # ==============================================================================
-# PawMatch Development Environment Docker Compose Orchestration
+# PawMatch Development Docker Compose Orchestration Architecture
+# Scalable Multi-Service Infrastructure Blueprint
 # ==============================================================================
 
 version: "3.8"
 
 services:
+  # ----------------------------------------------------------------------------
+  # 1. Django REST Framework Backend Service (Active Development Container)
+  # ----------------------------------------------------------------------------
   backend:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: pawmatch_backend_dev
+    container_name: pawmatch_backend
     restart: unless-stopped
     ports:
       - "8000:8000"
@@ -23,6 +27,9 @@ services:
       - .:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
+      - logs_volume:/app/logs
+    networks:
+      - pawmatch_network
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health/"]
       interval: 30s
@@ -31,39 +38,142 @@ services:
       start_period: 10s
 
   # ----------------------------------------------------------------------------
-  # Future Infrastructure Services Placeholder Expansion Slots:
+  # 2. PostgreSQL 17 Relational Database (Future Production Storage Slot)
   # ----------------------------------------------------------------------------
   # postgres:
   #   image: postgres:17-alpine
-  #   container_name: pawmatch_db_dev
+  #   container_name: pawmatch_postgres
+  #   restart: unless-stopped
   #   environment:
-  #     POSTGRES_DB: pawmatch_dev
-  #     POSTGRES_USER: pawmatch_user
-  #     POSTGRES_PASSWORD: pawmatch_password
+  #     POSTGRES_DB: ${POSTGRES_DB:-pawmatch_dev}
+  #     POSTGRES_USER: ${POSTGRES_USER:-pawmatch_user}
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pawmatch_password}
   #   ports:
   #     - "5432:5432"
   #   volumes:
   #     - postgres_data:/var/lib/postgresql/data
-  #
+  #   networks:
+  #     - pawmatch_network
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pawmatch_user} -d ${POSTGRES_DB:-pawmatch_dev}"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # ----------------------------------------------------------------------------
+  # 3. Redis In-Memory Cache & Message Broker (Future Task Queue Slot)
+  # ----------------------------------------------------------------------------
   # redis:
   #   image: redis:7-alpine
-  #   container_name: pawmatch_redis_dev
+  #   container_name: pawmatch_redis
+  #   restart: unless-stopped
   #   ports:
   #     - "6379:6379"
-  #
+  #   volumes:
+  #     - redis_data:/data
+  #   networks:
+  #     - pawmatch_network
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+
+  # ----------------------------------------------------------------------------
+  # 4. Celery Asynchronous Background Worker (Future Background Tasks Slot)
+  # ----------------------------------------------------------------------------
   # celery_worker:
   #   build:
   #     context: .
   #     dockerfile: Dockerfile
   #   container_name: pawmatch_celery_worker
+  #   restart: unless-stopped
   #   command: celery -A config worker --loglevel=info
   #   env_file:
   #     - .env
+  #   volumes:
+  #     - .:/app
+  #     - media_volume:/app/media
+  #   networks:
+  #     - pawmatch_network
   #   depends_on:
   #     - backend
   #     - redis
 
+  # ----------------------------------------------------------------------------
+  # 5. Celery Beat Periodic Cron Scheduler (Future Cron Tasks Slot)
+  # ----------------------------------------------------------------------------
+  # celery_beat:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: pawmatch_celery_beat
+  #   restart: unless-stopped
+  #   command: celery -A config beat --loglevel=info
+  #   env_file:
+  #     - .env
+  #   volumes:
+  #     - .:/app
+  #     - celery_beat_data:/app/celerybeat-data
+  #   networks:
+  #     - pawmatch_network
+  #   depends_on:
+  #     - celery_worker
+  #     - redis
+
+  # ----------------------------------------------------------------------------
+  # 6. Flower Real-time Celery Monitoring Dashboard (Future Observability Slot)
+  # ----------------------------------------------------------------------------
+  # flower:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   container_name: pawmatch_flower
+  #   restart: unless-stopped
+  #   command: celery -A config flower --port=5555
+  #   ports:
+  #     - "5555:5555"
+  #   env_file:
+  #     - .env
+  #   networks:
+  #     - pawmatch_network
+  #   depends_on:
+  #     - celery_worker
+  #     - redis
+
+  # ----------------------------------------------------------------------------
+  # 7. Nginx High-Performance Reverse Proxy & Static Gateway (Future Proxy Slot)
+  # ----------------------------------------------------------------------------
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: pawmatch_nginx
+  #   restart: unless-stopped
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf:ro
+  #     - static_volume:/usr/share/nginx/html/static:ro
+  #     - media_volume:/usr/share/nginx/html/media:ro
+  #   networks:
+  #     - pawmatch_network
+  #   depends_on:
+  #     - backend
+
+# ------------------------------------------------------------------------------
+# Isolated Internal Bridge Network
+# ------------------------------------------------------------------------------
+networks:
+  pawmatch_network:
+    driver: bridge
+
+# ------------------------------------------------------------------------------
+# Persistent Named Volumes
+# ------------------------------------------------------------------------------
 volumes:
   static_volume:
   media_volume:
+  logs_volume:
   # postgres_data:
+  # redis_data:
+  # celery_beat_data:

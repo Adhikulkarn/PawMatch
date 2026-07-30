@@ -22,6 +22,7 @@ backend/
 ├── filestructure.md
 ├── gunicorn.conf.py
 ├── manage.py
+├── pyproject.toml
 ├── render.yaml
 ├── apps/
 │   ├── __init__.py
@@ -103,6 +104,7 @@ backend/
 │   │   ├── apps.py
 │   │   ├── choices.py
 │   │   ├── exceptions.py
+│   │   ├── middleware.py
 │   │   ├── mixins.py
 │   │   ├── models.py
 │   │   ├── pagination.py
@@ -122,7 +124,8 @@ backend/
 │   │   ├── services/
 │   │   │   └── __init__.py
 │   │   └── tests/
-│   │       └── __init__.py
+│   │       ├── __init__.py
+│   │       └── test_health.py
 │   ├── notifications/
 │   │   ├── __init__.py
 │   │   ├── admin.py
@@ -207,10 +210,11 @@ backend/
 
 ## 2. Infrastructure & Deployment Files
 
+- **`.github/workflows/backend.yml`**: GitHub Actions CI workflow performing formatting checks, linting, Django security checks, unit tests, and Docker build validation.
 - **`Dockerfile`**: Multi-stage production container build configuration for OCI compliance.
 - **`.dockerignore`**: Excludes caches, virtual environments, logs, and sensitive `.env` files from Docker context.
-- **`gunicorn.conf.py`**: Production WSGI server configuration.
+- **`gunicorn.conf.py`**: Production WSGI server configuration with CPU auto-scaling.
 - **`build.sh`**: Render deployment script executing static collection and database migrations (`set -o errexit`).
 - **`render.yaml`**: Infrastructure-as-Code specification for Render Blueprint deployments.
 - **`docker-compose.yml`**: Development orchestration for running backend container locally with expansion slots for Redis and PostgreSQL.
-- **`README.md`**: Comprehensive developer and deployment onboarding guide.
+- **`pyproject.toml`**: Configurator for pytest, black, and isort.

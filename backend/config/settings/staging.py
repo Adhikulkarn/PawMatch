@@ -1,6 +1,7 @@
 """
 Staging settings for PawMatch.
 """
+
 from .base import *
 
 DEBUG = False
