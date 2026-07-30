@@ -7,7 +7,7 @@ from datetime import datetime, timezone
 
 from django.conf import settings
 from django.http import JsonResponse
-from django.views.decorators.http import require_GET
+from django.views.decorators.http import require_http_methods
 
 # Module-level static Context Caching for sub-millisecond response performance
 _APP_VERSION = os.getenv("APP_VERSION", os.getenv("RENDER_GIT_COMMIT", "1.0.0"))
@@ -30,10 +30,11 @@ def _get_environment_name() -> str:
 _ENVIRONMENT_NAME = _get_environment_name()
 
 
-@require_GET
+@require_http_methods(["GET", "HEAD"])
 def health_check(request):
     """
     Ultra-lightweight health check endpoint for cloud orchestrators (Render, ECS, K8s).
+    Supports GET and HEAD HTTP methods for zero-payload network health probing.
     Returns HTTP 200 with service metadata in < 1 ms without database interaction.
     """
     payload = {
