@@ -1,0 +1,12 @@
+# PawMatch Development Dependencies
+# ==============================================================================
+-r base.txt
+
+# Development Tooling & Linters
+black>=24.4.2
+flake8>=7.1.0
+isort>=5.13.2
+
+# Testing Frameworks
+pytest>=8.2.2
+pytest-django>=4.8.0

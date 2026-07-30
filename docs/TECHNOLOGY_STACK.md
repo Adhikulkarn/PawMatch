@@ -290,7 +290,16 @@ Celery Workers
 ---
 
 ### 6.6 Task Broker: Redis
-
+❯ git push
+Enumerating objects: 74, done.
+Counting objects: 100% (74/74), done.
+Delta compression using up to 12 threads
+Compressing objects: 100% (44/44), done.
+Writing objects: 100% (50/50), 5.78 KiB | 2.89 MiB/s, done.
+Total 50 (delta 23), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (23/23), completed with 11 local objects.
+To https://github.com/Adhikulkarn/PawMatch.git
+   1bf86c6..55510e1  main -> mainw
 - **Purpose**: High-performance in-memory key-value store acting as the primary message broker for Celery task queues and future application caching.
 - **Selection Rationale**: Sub-millisecond latency, extreme throughput, native pub/sub support, and seamless integration with Celery and Django cache backends.
 

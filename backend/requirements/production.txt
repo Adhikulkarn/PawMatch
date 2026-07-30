@@ -1,0 +1,6 @@
+# PawMatch Production Server Dependencies
+# ==============================================================================
+-r base.txt
+
+# Production HTTP WSGI Application Server
+gunicorn>=23.0.0,<24.0.0
