@@ -1,8 +1,7 @@
-import pytest
 from django.test import Client
 
 
-def test_health_check_endpoint():
+def test_health_check_endpoint_get():
     client = Client()
     response = client.get("/health/")
     assert response.status_code == 200
@@ -11,3 +10,10 @@ def test_health_check_endpoint():
     assert data["service"] == "pawmatch-backend"
     assert "environment" in data
     assert "timestamp" in data
+
+
+def test_health_check_endpoint_head():
+    client = Client()
+    response = client.head("/health/")
+    assert response.status_code == 200
+    assert response.content == b""

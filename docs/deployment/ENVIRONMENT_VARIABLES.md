@@ -1,74 +1,61 @@
-# Environment Variables
+# Master Environment Variables Specification
 
 ```text
 Document ID:     DEPLOYMENT-ENVIRONMENT_VARIABLES
-Status:          Approved Blueprint
-Version:         1.0
+Status:          Approved Specification
+Version:         1.1
 Document Owner:  PawMatch Architecture & Engineering Team
-Target Audience: Software Engineers, DevOps, QA, Product Managers, AI Coding Agents
-Last Updated:    July 29, 2026
+Last Updated:    July 30, 2026
 ```
 
 ---
 
-## 1. Purpose
+## 1. Overview & File Resolution Strategy
 
-This document serves as the official specification blueprint for **Environment Variables** within the PawMatch ecosystem. It defines architectural standards, operational procedures, code conventions, and system boundaries required for building, maintaining, and scaling the platform.
+PawMatch follows 12-Factor App methodology for configuration management. Environment settings are decoupled from application code and read via `django-environ`.
 
----
+### Dynamic Resolution Mechanism
+When Django initializes, `config/settings/base.py` selects the environment file based on `DJANGO_SETTINGS_MODULE`:
 
-## 2. Scope
-
-- **Execution Environments**: Applies to Development (`dev`), Staging (`staging`), and Production (`production`).
-- **Sub-System Scope**: Covers all related frontend (React 19 SPA), backend (Django 5.x REST API), storage (PostgreSQL 17, Redis, Cloudinary), and background worker (Celery) services.
-- **Single Source of Truth (SSOT)**: This specification supersedes informal notes and ad-hoc code implementations.
-
----
-
-## 3. Intended Audience
-
-- **Software Engineers & Contributors**: For implementing production-grade features adhering to domain boundaries.
-- **Frontend & Backend Leads**: For conducting architectural code reviews and API contract validations.
-- **DevOps & Security Personnel**: For auditing deployment security, pipeline isolation, and compliance.
-- **AI Coding Agents**: For referencing system constraints, technology stacks, and coding patterns prior to code generation.
+| `DJANGO_SETTINGS_MODULE` | Selected Env File | Storage Purpose |
+| :--- | :--- | :--- |
+| `config.settings.development` | `.env.development` | Local development variables & dev Neon PostgreSQL URI |
+| `config.settings.staging` | `.env.staging` | Pre-production staging configuration |
+| `config.settings.production` | `.env.production` | Hardened production settings (overridden by Render Dashboard) |
+| *Unspecified / Fallback* | `.env` | Local override file |
 
 ---
 
-## 4. Dependencies
+## 2. Environment Variable Catalog
 
-- [PRODUCT_ROADMAP.md](file:///home/spidy/Desktop/projects/PawMatch/PRODUCT_ROADMAP.md) – Overall product phase milestones (V1.0 - V7.0).
-- [TECHNOLOGY_STACK.md](file:///home/spidy/Desktop/projects/PawMatch/TECHNOLOGY_STACK.md) – Approved technology stack specification.
-- [SYSTEM_ARCHITECTURE.md](file:///home/spidy/Desktop/projects/PawMatch/docs/architecture/SYSTEM_ARCHITECTURE.md) – High-level component relationship blueprint.
-
----
-
-## 5. Related Documents
-
-- [DATABASE_SCHEMA.md](file:///home/spidy/Desktop/projects/PawMatch/docs/architecture/DATABASE_SCHEMA.md) – Relational entity schemas and data models.
-- [API_SPECIFICATION_V1.md](file:///home/spidy/Desktop/projects/PawMatch/docs/architecture/API_SPECIFICATION_V1.md) – RESTful API endpoints and payload specs.
-- [RBAC.md](file:///home/spidy/Desktop/projects/PawMatch/docs/architecture/RBAC.md) – Role-Based Access Control matrix.
-- [AUTHENTICATION.md](file:///home/spidy/Desktop/projects/PawMatch/docs/security/AUTHENTICATION.md) – JWT token authentication policy.
-
----
-
-## 6. Document Blueprint & Required Sections
-
-To fulfill the complete implementation of this document, the following detailed sections must be populated:
-
-1. **Executive Overview & Objectives**: Detailed technical context and problem statements addressed.
-2. **Architectural Principles & System Boundaries**: Clear boundaries preventing coupling or unauthorized data sharing.
-3. **Detailed Technical Specification**:
-   - Data structures, type definitions, and schema mappings.
-   - Sequence flowcharts and state transition diagrams.
-   - Code examples and configuration parameters.
-4. **Environment-Specific Behaviors**: Explicit distinctions between Development, Staging, and Production modes.
-5. **Security, Compliance & Error Handling**: Threat mitigation, input validation, and audit logging specs.
-6. **Testing & Verification Criteria**: Unit, integration, and performance benchmarking requirements.
+| Variable Name | Required | Default / Sample | Description |
+| :--- | :---: | :--- | :--- |
+| `SECRET_KEY` | Yes | `[Cryptographic Hash]` | Django cryptographic signing key |
+| `DEBUG` | No | `False` | Toggles development debugging and tracebacks |
+| `ALLOWED_HOSTS` | Yes | `127.0.0.1,localhost,.onrender.com` | Comma-separated allowed HTTP Host headers |
+| `DATABASE_URL` | Yes | `postgres://user:pass@host:5432/db` | PostgreSQL connection string (Neon / Render) |
+| `REDIS_URL` | No | `redis://:pass@host:6379/0` | Redis URI for caching and Celery task broker |
+| `EMAIL_HOST` | No | `smtp.sendgrid.net` | SMTP gateway host |
+| `EMAIL_PORT` | No | `587` | SMTP gateway port |
+| `EMAIL_HOST_USER` | No | `apikey` | SMTP account username / API key |
+| `EMAIL_HOST_PASSWORD` | No | `[SMTP Secret]` | SMTP account password / secret |
+| `DEFAULT_FROM_EMAIL` | No | `PawMatch <noreply@pawmatch.com>` | Outbound transactional sender address |
+| `JWT_ACCESS_LIFETIME` | No | `15` | JWT Access Token duration in minutes |
+| `JWT_REFRESH_LIFETIME` | No | `7` | JWT Refresh Token duration in days |
+| `LOG_LEVEL` | No | `INFO` | Logging severity threshold (`DEBUG`, `INFO`, `WARNING`, `ERROR`) |
+| `LOG_FORMAT` | No | `json` | Logging output format (`json` for CloudWatch/Loki, `text` for dev) |
+| `CORS_ALLOWED_ORIGINS` | Yes | `https://pawmatch.com` | Whitelisted origins for cross-site requests |
+| `CSRF_TRUSTED_ORIGINS` | Yes | `https://pawmatch.com` | Trusted origins for CSRF validation |
+| `SECURE_SSL_REDIRECT` | No | `True` | Forces HTTPS redirection in staging/prod |
+| `GUNICORN_WORKERS` | No | `(cpu_count * 2) + 1` | Gunicorn worker process count |
+| `GUNICORN_THREADS` | No | `4` | Gunicorn threads per worker |
+| `GUNICORN_TIMEOUT` | No | `60` | Worker timeout in seconds |
+| `GUNICORN_GRACEFUL_TIMEOUT` | No | `30` | Graceful worker shutdown timeout |
 
 ---
 
-## 7. Future Expansion Notes
+## 3. Git Security & Exclusion Policy
 
-- **Phase V1.5 (Smart Adoption)**: Integration points for AI matching algorithms and lifestyle vector scoring.
-- **Phase V2.0 - V3.0 (Pet Care & Vet Platform)**: Schemas and API extensions for medical records and telehealth appointments.
-- **Phase V6.0 - V7.0 (Enterprise & Future AI)**: Multi-tenant governance, audit logging, and IoT telemetry streams.
+- **Tracked Files**: Only `.env.example` containing dummy placeholder values is committed to version control.
+- **Ignored Files**: All real `.env`, `.env.development`, `.env.staging`, `.env.production`, and `.env.*` files are strictly excluded via `.gitignore`.
+- **Render Vault**: In production and staging, sensitive variables (`SECRET_KEY`, `DATABASE_URL`, `REDIS_URL`) are populated directly in the Render Dashboard environment vault.

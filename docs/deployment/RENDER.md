@@ -1,74 +1,94 @@
-# Render
+# Render Deployment Specification
 
 ```text
 Document ID:     DEPLOYMENT-RENDER
-Status:          Approved Blueprint
-Version:         1.0
+Status:          Approved Specification
+Version:         1.1
 Document Owner:  PawMatch Architecture & Engineering Team
-Target Audience: Software Engineers, DevOps, QA, Product Managers, AI Coding Agents
-Last Updated:    July 29, 2026
+Last Updated:    July 30, 2026
 ```
 
 ---
 
-## 1. Purpose
+## 1. Overview & Architecture
 
-This document serves as the official specification blueprint for **Render** within the PawMatch ecosystem. It defines architectural standards, operational procedures, code conventions, and system boundaries required for building, maintaining, and scaling the platform.
-
----
-
-## 2. Scope
-
-- **Execution Environments**: Applies to Development (`dev`), Staging (`staging`), and Production (`production`).
-- **Sub-System Scope**: Covers all related frontend (React 19 SPA), backend (Django 5.x REST API), storage (PostgreSQL 17, Redis, Cloudinary), and background worker (Celery) services.
-- **Single Source of Truth (SSOT)**: This specification supersedes informal notes and ad-hoc code implementations.
+PawMatch backend is deployed on **Render** using the **Docker Runtime**. Render hosts the Gunicorn WSGI application service, connects to a managed Neon PostgreSQL database cluster, and processes background jobs.
 
 ---
 
-## 3. Intended Audience
+## 2. Infrastructure-as-Code (`render.yaml`)
 
-- **Software Engineers & Contributors**: For implementing production-grade features adhering to domain boundaries.
-- **Frontend & Backend Leads**: For conducting architectural code reviews and API contract validations.
-- **DevOps & Security Personnel**: For auditing deployment security, pipeline isolation, and compliance.
-- **AI Coding Agents**: For referencing system constraints, technology stacks, and coding patterns prior to code generation.
+Render deployments are driven by the repository Blueprint specification:
+
+```yaml
+services:
+  - type: web
+    name: pawmatch-backend
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: backend
+    plan: starter
+    region: oregon
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /health/
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: config.settings.production
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
+      - key: PYTHONFAULTHANDLER
+        value: "1"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: CSRF_TRUSTED_ORIGINS
+        sync: false
+      - key: SECURE_SSL_REDIRECT
+        value: "true"
+      - key: GUNICORN_WORKERS
+        value: "2"
+      - key: GUNICORN_THREADS
+        value: "4"
+      - key: GUNICORN_TIMEOUT
+        value: "60"
+      - key: GUNICORN_GRACEFUL_TIMEOUT
+        value: "30"
+      - key: LOG_LEVEL
+        value: "INFO"
+      - key: LOG_FORMAT
+        value: "json"
+```
 
 ---
 
-## 4. Dependencies
+## 3. Hardened Build Script (`build.sh`)
 
-- [PRODUCT_ROADMAP.md](file:///home/spidy/Desktop/projects/PawMatch/PRODUCT_ROADMAP.md) – Overall product phase milestones (V1.0 - V7.0).
-- [TECHNOLOGY_STACK.md](file:///home/spidy/Desktop/projects/PawMatch/TECHNOLOGY_STACK.md) – Approved technology stack specification.
-- [SYSTEM_ARCHITECTURE.md](file:///home/spidy/Desktop/projects/PawMatch/docs/architecture/SYSTEM_ARCHITECTURE.md) – High-level component relationship blueprint.
+Render build execution uses a hardened Bash script:
 
----
-
-## 5. Related Documents
-
-- [DATABASE_SCHEMA.md](file:///home/spidy/Desktop/projects/PawMatch/docs/architecture/DATABASE_SCHEMA.md) – Relational entity schemas and data models.
-- [API_SPECIFICATION_V1.md](file:///home/spidy/Desktop/projects/PawMatch/docs/architecture/API_SPECIFICATION_V1.md) – RESTful API endpoints and payload specs.
-- [RBAC.md](file:///home/spidy/Desktop/projects/PawMatch/docs/architecture/RBAC.md) – Role-Based Access Control matrix.
-- [AUTHENTICATION.md](file:///home/spidy/Desktop/projects/PawMatch/docs/security/AUTHENTICATION.md) – JWT token authentication policy.
+- **Strict Flags**: Enforces `set -o errexit`, `set -o pipefail`, `set -o nounset`.
+- **Error Trapping**: Traps failure events (`trap ... ERR`) with line numbers for Render log telemetry.
+- **Pipeline Execution**:
+  1. Upgrades `pip`.
+  2. Installs production dependencies (`requirements/production.txt`).
+  3. Executes `python manage.py check --deploy`.
+  4. Collects static assets (`python manage.py collectstatic --noinput --clear`).
+  5. Executes database migrations (`python manage.py migrate --noinput`).
 
 ---
 
-## 6. Document Blueprint & Required Sections
+## 4. Health Probes & Zero-Downtime Deploys
 
-To fulfill the complete implementation of this document, the following detailed sections must be populated:
-
-1. **Executive Overview & Objectives**: Detailed technical context and problem statements addressed.
-2. **Architectural Principles & System Boundaries**: Clear boundaries preventing coupling or unauthorized data sharing.
-3. **Detailed Technical Specification**:
-   - Data structures, type definitions, and schema mappings.
-   - Sequence flowcharts and state transition diagrams.
-   - Code examples and configuration parameters.
-4. **Environment-Specific Behaviors**: Explicit distinctions between Development, Staging, and Production modes.
-5. **Security, Compliance & Error Handling**: Threat mitigation, input validation, and audit logging specs.
-6. **Testing & Verification Criteria**: Unit, integration, and performance benchmarking requirements.
-
----
-
-## 7. Future Expansion Notes
-
-- **Phase V1.5 (Smart Adoption)**: Integration points for AI matching algorithms and lifestyle vector scoring.
-- **Phase V2.0 - V3.0 (Pet Care & Vet Platform)**: Schemas and API extensions for medical records and telehealth appointments.
-- **Phase V6.0 - V7.0 (Enterprise & Future AI)**: Multi-tenant governance, audit logging, and IoT telemetry streams.
+- **Health Endpoint**: `GET /health/`
+  - Returns `{"status": "healthy", "service": "pawmatch-backend", "version": "...", "environment": "production", "timestamp": "..."}`.
+  - Zero database queries, execution latency `< 1 ms`.
+- **Zero-Downtime Deploys**: Render waits for the container health check probe to return HTTP 200 before swapping old web service instances with new ones.
