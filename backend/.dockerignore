@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# Virtual Environments
+venv/
+env/
+ENV/
+
+# Python Bytecode & Cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+
+# Local Database Files
+*.sqlite3
+*.db
+
+# Environment Secrets
+.env
+.env.*
+!.env.example
+
+# Local Media, Static, and Log Outputs
+logs/
+media/
+staticfiles/
+static_collected/
+
+# IDE & Editor Settings
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db

@@ -1,42 +1,46 @@
-# Python
+# Python Bytecode & Cache
 __pycache__/
 *.py[cod]
+*$py.class
 *.egg-info/
 dist/
 build/
 
-# Virtual environment
+# Virtual Environments
 venv/
-.env
+env/
+ENV/
 
-# Local database (SQLite fallback for dev)
+# Environment Variables & Secrets (CRITICAL - DO NOT COMMIT SECRETS)
+.env
+.env.*
+!.env.example
+
+# Local Database Files
 *.db
 *.sqlite3
 
-# Local media & static
+# Local Media, Static & Logs
 media/
 staticfiles/
 static_collected/
-
-# Logs
+logs/
 *.log
 
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-
-# Testing & coverage
+# Testing & Coverage
 .pytest_cache/
 .coverage
 htmlcov/
 coverage/
 
-# Local config
+# IDE & OS Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Local Configuration
 local_settings.py

@@ -7,6 +7,7 @@ Each app owns its own api/urls.py — only routing is registered here.
 from django.urls import include, path
 
 urlpatterns = [
+    path("core/", include("apps.core.api.urls")),
     path("accounts/", include("apps.accounts.api.urls")),
     path("shelters/", include("apps.shelters.api.urls")),
     path("pets/", include("apps.pets.api.urls")),

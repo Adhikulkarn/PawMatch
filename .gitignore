@@ -1,0 +1,38 @@
+# Root Git Ignore Rules for PawMatch Repository
+
+# Environment Variables & Secrets (CRITICAL)
+.env
+.env.*
+!.env.example
+*.env
+
+# Python & Virtual Environments
+__pycache__/
+*.py[cod]
+venv/
+env/
+ENV/
+
+# Local Database Files
+*.db
+*.sqlite3
+
+# Local Logs & Media
+*.log
+logs/
+media/
+staticfiles/
+
+# Node.js / Frontend dependencies (for future React setup)
+node_modules/
+dist/
+build/
+.npm
+
+# IDE & OS Files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

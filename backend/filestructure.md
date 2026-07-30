@@ -8,14 +8,21 @@ This document outlines the file tree and directory structure of the **PawMatch**
 
 ```text
 backend/
+├── .dockerignore
 ├── .env
 ├── .env.development
 ├── .env.example
 ├── .env.production
 ├── .env.staging
 ├── .gitignore
+├── Dockerfile
+├── README.md
+├── build.sh
+├── docker-compose.yml
 ├── filestructure.md
+├── gunicorn.conf.py
 ├── manage.py
+├── render.yaml
 ├── apps/
 │   ├── __init__.py
 │   ├── accounts/
@@ -198,44 +205,12 @@ backend/
 
 ---
 
-## 2. Directory & Module Details
+## 2. Infrastructure & Deployment Files
 
-### Root Environment Files
-- **`.env`**: Active local environment file.
-- **`.env.example`**: Template environment variable file.
-- **`.env.development`**: Environment settings for local development.
-- **`.env.staging`**: Pre-production staging configuration.
-- **`.env.production`**: Hardened production environment configuration.
-- **`manage.py`**: Django CLI management entry point.
-- **`.gitignore`**: Version control rules.
-
----
-
-### `requirements/` (Dependency Modularization)
-- **`base.txt`**: Production core packages (Django, DRF, django-environ, dj-database-url, psycopg, whitenoise, Pillow, drf-spectacular, djangorestframework-simplejwt).
-- **`development.txt`**: Extends `base.txt` with dev tools (pytest, flake8, black, isort).
-- **`production.txt`**: Extends `base.txt` with Gunicorn WSGI server.
-- **`testing.txt`**: Extends `base.txt` with test runners and coverage tools.
-
----
-
-### `config/` (Settings & Router)
-- **`settings/`**:
-  - `base.py`: Multi-environment decoupled configuration.
-  - `development.py`: Development overrides (`DEBUG=True`, console email, SQLite fallback).
-  - `staging.py`: Staging security defaults and logging.
-  - `production.py`: Hardened production security, HSTS, SSL, WhiteNoise storage.
-  - `logging.py`: Centralized logging configuration dictionary.
-- **`api/`**: Central API Gateway and v1 route aggregators.
-
----
-
-### `apps/core/` (Infrastructure Base Modules)
-- **`choices.py`**: Common choice enums (`UserRole`, `PetSpecies`, `PetStatus`, `ApplicationStatus`).
-- **`exceptions.py`**: Custom DRF error response standardizer.
-- **`mixins.py`**: Abstract model mixins (`UUIDModel`, `TimestampedModel`, `SoftDeleteModel`).
-- **`pagination.py`**: Standardized pagination classes.
-- **`permissions.py`**: Core RBAC permission guards.
-- **`signals.py`**: Infrastructure signal definitions.
-- **`utils.py`**: Infrastructure helper functions.
-- **`validators.py`**: Input validation functions (phone numbers, file sizes).
+- **`Dockerfile`**: Multi-stage production container build configuration for OCI compliance.
+- **`.dockerignore`**: Excludes caches, virtual environments, logs, and sensitive `.env` files from Docker context.
+- **`gunicorn.conf.py`**: Production WSGI server configuration.
+- **`build.sh`**: Render deployment script executing static collection and database migrations (`set -o errexit`).
+- **`render.yaml`**: Infrastructure-as-Code specification for Render Blueprint deployments.
+- **`docker-compose.yml`**: Development orchestration for running backend container locally with expansion slots for Redis and PostgreSQL.
+- **`README.md`**: Comprehensive developer and deployment onboarding guide.
