@@ -13,8 +13,21 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 # Initialize django-environ
 env = environ.Env()
 
-# Read .env file if available
-env_file = os.path.join(BASE_DIR, ".env")
+# Environment File Resolution Strategy
+settings_module = os.getenv("DJANGO_SETTINGS_MODULE", "")
+if "development" in settings_module:
+    target_env = ".env.development"
+elif "staging" in settings_module:
+    target_env = ".env.staging"
+elif "production" in settings_module:
+    target_env = ".env.production"
+else:
+    target_env = ".env"
+
+env_file = os.path.join(BASE_DIR, target_env)
+if not os.path.exists(env_file):
+    env_file = os.path.join(BASE_DIR, ".env")
+
 if os.path.exists(env_file):
     environ.Env.read_env(env_file)
 
