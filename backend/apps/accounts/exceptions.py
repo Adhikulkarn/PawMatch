@@ -100,3 +100,21 @@ class PolicyViolationException(AuthorizationException):
     status_code = 403
     default_detail = "Policy authorization failed."
     default_code = "policy_violation"
+
+
+class InvalidRoleException(AuthorizationException):
+    status_code = 400
+    default_detail = "Invalid role specified."
+    default_code = "invalid_role"
+
+
+class DuplicateRoleException(AuthorizationException):
+    status_code = 400
+    default_detail = "User already possesses this role."
+    default_code = "duplicate_role"
+
+
+class RoleNotAssignedException(AuthorizationException):
+    status_code = 400
+    default_detail = "Role is not assigned to user."
+    default_code = "role_not_assigned"

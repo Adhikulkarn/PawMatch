@@ -6,7 +6,7 @@ Provides lightweight event classes and signal handlers to decouple side-effects
 
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from django.dispatch import Signal
 
@@ -26,6 +26,7 @@ permission_granted_signal = Signal()
 permission_denied_signal = Signal()
 role_assigned_signal = Signal()
 role_removed_signal = Signal()
+role_replaced_signal = Signal()
 
 
 @dataclass
@@ -158,6 +159,16 @@ class RoleRemovedEvent:
     timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
 
 
+@dataclass
+class RoleReplacedEvent:
+    user_id: Any
+    email: str
+    roles: list
+    replaced_by: Optional[Any] = None
+    request: Optional[Any] = None
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+
 class EventDispatcher:
     """Dispatches authentication, profile, password & authorization events to connected listeners."""
 
@@ -279,3 +290,54 @@ class EventDispatcher:
             request=request,
         )
         permission_denied_signal.send(sender=EventDispatcher, event=event)
+
+    @staticmethod
+    def dispatch_role_assigned(
+        user_id: Any,
+        email: str,
+        role_name: str,
+        assigned_by: Optional[Any] = None,
+        request: Optional[Any] = None,
+    ) -> None:
+        event = RoleAssignedEvent(
+            user_id=user_id,
+            email=email,
+            role_name=role_name,
+            assigned_by=assigned_by,
+            request=request,
+        )
+        role_assigned_signal.send(sender=EventDispatcher, event=event)
+
+    @staticmethod
+    def dispatch_role_removed(
+        user_id: Any,
+        email: str,
+        role_name: str,
+        removed_by: Optional[Any] = None,
+        request: Optional[Any] = None,
+    ) -> None:
+        event = RoleRemovedEvent(
+            user_id=user_id,
+            email=email,
+            role_name=role_name,
+            removed_by=removed_by,
+            request=request,
+        )
+        role_removed_signal.send(sender=EventDispatcher, event=event)
+
+    @staticmethod
+    def dispatch_role_replaced(
+        user_id: Any,
+        email: str,
+        roles: list,
+        replaced_by: Optional[Any] = None,
+        request: Optional[Any] = None,
+    ) -> None:
+        event = RoleReplacedEvent(
+            user_id=user_id,
+            email=email,
+            roles=roles,
+            replaced_by=replaced_by,
+            request=request,
+        )
+        role_replaced_signal.send(sender=EventDispatcher, event=event)

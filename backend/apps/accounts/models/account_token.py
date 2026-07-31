@@ -3,8 +3,6 @@ Generic AccountToken model definition for PawMatch.
 Provides reusable token infrastructure for Email Verification, Password Reset, Email Change, etc.
 """
 
-from typing import Any
-
 from django.db import models
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _

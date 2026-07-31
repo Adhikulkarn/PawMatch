@@ -2,7 +2,7 @@
 Email validation functions for PawMatch Accounts.
 """
 
-from typing import Any, Optional
+from typing import Any
 
 from rest_framework.exceptions import ValidationError
 

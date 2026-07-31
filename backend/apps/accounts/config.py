@@ -101,5 +101,9 @@ class AccountsConfig:
     def enable_policy_engine(self) -> bool:
         return getattr(settings, "ENABLE_POLICY_ENGINE", True)
 
+    @property
+    def enable_auto_rbac_sync(self) -> bool:
+        return getattr(settings, "ENABLE_AUTO_RBAC_SYNC", False)
+
 
 accounts_config = AccountsConfig()

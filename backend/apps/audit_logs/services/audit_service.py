@@ -5,7 +5,6 @@ and records structured audit log instances for security events.
 """
 
 import logging
-import re
 from typing import Any, Dict, Optional, Tuple
 
 from apps.audit_logs.models import AuditLog
