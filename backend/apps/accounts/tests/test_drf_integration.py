@@ -92,15 +92,16 @@ class DRFIntegrationTestCase(TestCase):
 
     def test_drf_has_permission_class(self):
         """Verifies DRF HasPermission class compatibility."""
-        perm_class = HasPermission(PermissionName.PETS_VIEW)
+        perm_class = HasPermission(PermissionName.PETS_CREATE)
         request = SimpleNamespace(user=self.user)
         view = SimpleNamespace()
 
-        # User without role
+        # User without staff/manager role does not have pets.create
         self.assertFalse(perm_class.has_permission(request, view))
 
         # Assign role
-        RoleService.assign_role(user=self.user, role=RoleName.ADOPTER)
+        RoleService.assign_role(user=self.user, role=RoleName.SHELTER_STAFF)
+        RoleService.invalidate_user_permission_cache(self.user)
         self.assertTrue(perm_class.has_permission(request, view))
 
     def test_drf_has_role_class(self):
