@@ -3,6 +3,7 @@ Base Django settings for PawMatch project.
 """
 
 import os
+from datetime import timedelta
 from pathlib import Path
 
 import environ
@@ -39,6 +40,9 @@ SECRET_KEY = env.str(
 DEBUG = env.bool("DEBUG", default=False)
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=["127.0.0.1", "localhost"])
 
+# Security & Authentication Settings
+AUTH_USER_MODEL = "accounts.User"
+
 # Application Definition
 DJANGO_APPS = [
     "django.contrib.admin",
@@ -52,6 +56,7 @@ DJANGO_APPS = [
 THIRD_PARTY_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     "django_filters",
     "drf_spectacular",
@@ -109,8 +114,12 @@ DEFAULT_DB_URL = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
 DATABASES = {"default": env.db("DATABASE_URL", default=DEFAULT_DB_URL)}
 
 # Cache Configuration (Redis with LocalMemCache fallback)
+import sys
+
+IS_TESTING = "test" in sys.argv or any("pytest" in arg for arg in sys.argv)
+
 REDIS_URL = env.str("REDIS_URL", default="")
-if REDIS_URL:
+if REDIS_URL and not IS_TESTING:
     CACHES = {
         "default": {
             "BACKEND": "django.core.cache.backends.redis.RedisCache",
@@ -190,6 +199,28 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     "EXCEPTION_HANDLER": "apps.core.exceptions.custom_exception_handler",
+    "DEFAULT_THROTTLE_RATES": {
+        "login_anon": env.str("THROTTLE_LOGIN_ANON", default="5/min"),
+        "login_user": env.str("THROTTLE_LOGIN_USER", default="20/min"),
+        "register_anon": env.str("THROTTLE_REGISTER_ANON", default="5/min"),
+        "resend_verification": env.str("THROTTLE_RESEND_VERIFICATION", default="3/min"),
+        "anon": "100/day",
+        "user": "1000/day",
+    },
+}
+
+# SimpleJWT Authentication Configuration
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=15),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": True,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "UPDATE_LAST_LOGIN": True,
+    "ALGORITHM": "HS256",
+    "SIGNING_KEY": SECRET_KEY,
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "USER_ID_FIELD": "id",
+    "USER_ID_CLAIM": "user_id",
 }
 
 # OpenAPI Schema Documentation (drf-spectacular)
@@ -203,6 +234,15 @@ SPECTACULAR_SETTINGS = {
 # CORS & CSRF Defaults
 CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=[])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
+
+# Registration & Verification Configuration
+EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS = env.int(
+    "EMAIL_VERIFICATION_TOKEN_EXPIRY_HOURS", default=24
+)
+FRONTEND_URL = env.str("FRONTEND_URL", default="http://localhost:5173")
+FRONTEND_VERIFY_EMAIL_URL = env.str(
+    "FRONTEND_VERIFY_EMAIL_URL", default=f"{FRONTEND_URL}/verify-email"
+)
 
 # Centralized Logging Setup
 from .logging import get_logging_config  # noqa: E402

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to PawMatch</title>
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; color: #333333; }
+        .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .header { background: linear-gradient(135deg, #059669, #047857); padding: 30px; text-align: center; color: #ffffff; }
+        .header h1 { margin: 0; font-size: 26px; font-weight: 700; }
+        .content { padding: 30px; line-height: 1.6; }
+        .btn { display: inline-block; background-color: #059669; color: #ffffff !important; padding: 14px 28px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; text-align: center; }
+        .footer { background-color: #f9fafb; padding: 20px; text-align: center; font-size: 12px; color: #6b7280; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>PawMatch Account Activated 🎉</h1>
+        </div>
+        <div class="content">
+            <h2>Your Email is Verified, {{ first_name }}!</h2>
+            <p>Your PawMatch account is now active and fully verified.</p>
+            <p>You can now log in to explore pet adoption listings, shelter services, and pet health tools.</p>
+            <div style="text-align: center;">
+                <a href="{{ login_url }}" class="btn">Log In to PawMatch</a>
+            </div>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 PawMatch Ecosystem. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
