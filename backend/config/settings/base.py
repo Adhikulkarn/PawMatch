@@ -204,6 +204,7 @@ REST_FRAMEWORK = {
         "login_user": env.str("THROTTLE_LOGIN_USER", default="20/min"),
         "register_anon": env.str("THROTTLE_REGISTER_ANON", default="5/min"),
         "resend_verification": env.str("THROTTLE_RESEND_VERIFICATION", default="3/min"),
+        "password_reset": env.str("THROTTLE_PASSWORD_RESET", default="3/min"),
         "anon": "100/day",
         "user": "1000/day",
     },

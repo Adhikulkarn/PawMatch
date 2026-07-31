@@ -1,31 +1,225 @@
 """
-REST API views for PawMatch Authentication, User Registration & Email Verification.
+REST API views for PawMatch Authentication, User Registration, Email Verification, Profile Management & Password Management.
 """
 
 from rest_framework import status
 from rest_framework.generics import GenericAPIView, RetrieveAPIView
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.accounts.api.serializers import (
+    ChangePasswordSerializer,
     CurrentUserSerializer,
+    DeactivateAccountSerializer,
+    ForgotPasswordSerializer,
     LoginSerializer,
     LogoutSerializer,
     RegisterSerializer,
     ResendVerificationSerializer,
+    ResetPasswordSerializer,
+    UpdateProfileSerializer,
+    UploadAvatarSerializer,
+    UserProfileResponseSerializer,
     VerifyEmailSerializer,
 )
 from apps.accounts.constants import AuditAction, AuthMessage
 from apps.accounts.services.authentication_service import AuthenticationService
+from apps.accounts.services.password_service import PasswordService
+from apps.accounts.services.profile_service import ProfileService
 from apps.accounts.services.registration_service import RegistrationService
 from apps.accounts.throttles import (
     LoginAnonRateThrottle,
     LoginUserRateThrottle,
+    PasswordResetRateThrottle,
     RegisterRateThrottle,
     ResendVerificationRateThrottle,
 )
 from apps.audit_logs.services.audit_service import AuditService
 from apps.core.responses import api_response
+
+
+class ChangePasswordAPIView(GenericAPIView):
+    """
+    POST /api/v1/accounts/change-password/
+    Allows authenticated users to change their password with current password verification.
+    """
+
+    permission_classes = (IsAuthenticated,)
+    serializer_class = ChangePasswordSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        PasswordService.change_password(
+            user=request.user,
+            current_password=serializer.validated_data["current_password"],
+            new_password=serializer.validated_data["new_password"],
+            confirm_password=serializer.validated_data["confirm_password"],
+            request=request,
+        )
+
+        return api_response(
+            success=True,
+            message=AuthMessage.PASSWORD_CHANGED_SUCCESS,
+            status_code=status.HTTP_200_OK,
+        )
+
+
+class ForgotPasswordAPIView(GenericAPIView):
+    """
+    POST /api/v1/accounts/forgot-password/
+    Initiates password reset workflow. Always returns generic success response to prevent user enumeration.
+    """
+
+    permission_classes = (AllowAny,)
+    throttle_classes = (PasswordResetRateThrottle,)
+    serializer_class = ForgotPasswordSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        PasswordService.forgot_password(
+            email=serializer.validated_data["email"], request=request
+        )
+
+        return api_response(
+            success=True,
+            message=AuthMessage.FORGOT_PASSWORD_SUCCESS,
+            status_code=status.HTTP_200_OK,
+        )
+
+
+class ResetPasswordAPIView(GenericAPIView):
+    """
+    POST /api/v1/accounts/reset-password/
+    Resets user password using cryptographically verified AccountToken.
+    """
+
+    permission_classes = (AllowAny,)
+    throttle_classes = (PasswordResetRateThrottle,)
+    serializer_class = ResetPasswordSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        PasswordService.reset_password(
+            raw_token=serializer.validated_data["token"],
+            new_password=serializer.validated_data["new_password"],
+            confirm_password=serializer.validated_data["confirm_password"],
+            request=request,
+        )
+
+        return api_response(
+            success=True,
+            message=AuthMessage.PASSWORD_RESET_SUCCESS,
+            status_code=status.HTTP_200_OK,
+        )
+
+
+class UserProfileAPIView(GenericAPIView):
+    """
+    GET /api/v1/accounts/profile/
+    PATCH /api/v1/accounts/profile/
+    Retrieves or partially updates current authenticated user profile.
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def get(self, request, *args, **kwargs):
+        _, profile = ProfileService.get_profile(request.user)
+        serializer = UserProfileResponseSerializer(
+            profile, context={"request": request}
+        )
+        return api_response(
+            success=True,
+            message=AuthMessage.PROFILE_RETRIEVED_SUCCESS,
+            data=serializer.data,
+            status_code=status.HTTP_200_OK,
+        )
+
+    def patch(self, request, *args, **kwargs):
+        serializer = UpdateProfileSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        profile = ProfileService.update_profile(
+            user=request.user, data=serializer.validated_data, request=request
+        )
+
+        response_serializer = UserProfileResponseSerializer(
+            profile, context={"request": request}
+        )
+        return api_response(
+            success=True,
+            message=AuthMessage.PROFILE_UPDATED_SUCCESS,
+            data=response_serializer.data,
+            status_code=status.HTTP_200_OK,
+        )
+
+
+class UploadAvatarAPIView(GenericAPIView):
+    """
+    POST /api/v1/accounts/profile/avatar/
+    DELETE /api/v1/accounts/profile/avatar/
+    Uploads or deletes current authenticated user avatar image.
+    """
+
+    permission_classes = (IsAuthenticated,)
+    parser_classes = (MultiPartParser, FormParser)
+
+    def post(self, request, *args, **kwargs):
+        serializer = UploadAvatarSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        avatar_url = ProfileService.upload_avatar(
+            user=request.user,
+            avatar_file=serializer.validated_data["avatar"],
+            request=request,
+        )
+
+        return api_response(
+            success=True,
+            message=AuthMessage.AVATAR_UPLOADED_SUCCESS,
+            data={"avatar": avatar_url},
+            status_code=status.HTTP_200_OK,
+        )
+
+    def delete(self, request, *args, **kwargs):
+        ProfileService.delete_avatar(user=request.user, request=request)
+        return api_response(
+            success=True,
+            message=AuthMessage.AVATAR_DELETED_SUCCESS,
+            data={"avatar": ""},
+            status_code=status.HTTP_200_OK,
+        )
+
+
+class DeactivateAccountAPIView(GenericAPIView):
+    """
+    POST /api/v1/accounts/deactivate/
+    Deactivates current user account after password verification.
+    """
+
+    permission_classes = (IsAuthenticated,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = DeactivateAccountSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        ProfileService.deactivate_account(
+            user=request.user,
+            password=serializer.validated_data["password"],
+            request=request,
+        )
+
+        return api_response(
+            success=True,
+            message=AuthMessage.ACCOUNT_DEACTIVATED_SUCCESS,
+            status_code=status.HTTP_200_OK,
+        )
 
 
 class RegisterAPIView(GenericAPIView):

@@ -1,5 +1,5 @@
 """
-DRF Throttling classes for Authentication & Registration API endpoints.
+DRF Throttling classes for Authentication, Registration & Password Management API endpoints.
 Provides rate-limiting protection against brute-force attacks and abuse.
 """
 
@@ -40,3 +40,12 @@ class ResendVerificationRateThrottle(AnonRateThrottle):
     """
 
     scope = "resend_verification"
+
+
+class PasswordResetRateThrottle(AnonRateThrottle):
+    """
+    Rate limiter for password reset / forgot password requests.
+    Scope: 'password_reset' (Default: 3/min)
+    """
+
+    scope = "password_reset"

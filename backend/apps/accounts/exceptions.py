@@ -51,3 +51,52 @@ class EmailAlreadyVerifiedException(AccountsException):
     status_code = 400
     default_detail = "Email address is already verified."
     default_code = "email_already_verified"
+
+
+class PasswordMismatchException(AccountsException):
+    status_code = 400
+    default_detail = "Passwords do not match."
+    default_code = "password_mismatch"
+
+
+class InvalidCurrentPasswordException(AccountsException):
+    status_code = 400
+    default_detail = "Current password is incorrect."
+    default_code = "invalid_current_password"
+
+
+class PasswordReuseException(AccountsException):
+    status_code = 400
+    default_detail = "Cannot reuse a recently used password."
+    default_code = "password_reuse"
+
+
+class PasswordResetExpiredException(ExpiredTokenException):
+    default_detail = "Password reset link has expired."
+    default_code = "password_reset_expired"
+
+
+class AuthorizationException(AccountsException):
+    """Base domain exception for Authorization failures."""
+
+    status_code = 403
+    default_detail = "You do not have permission to perform this action."
+    default_code = "authorization_error"
+
+
+class PermissionDeniedException(AuthorizationException):
+    status_code = 403
+    default_detail = "Required permission was denied."
+    default_code = "permission_denied"
+
+
+class RoleRequiredException(AuthorizationException):
+    status_code = 403
+    default_detail = "Required role missing."
+    default_code = "role_required"
+
+
+class PolicyViolationException(AuthorizationException):
+    status_code = 403
+    default_detail = "Policy authorization failed."
+    default_code = "policy_violation"
