@@ -66,9 +66,7 @@ class PolicyEngine:
         return None
 
     @classmethod
-    def evaluate(
-        cls, user: Any, action: str, resource: Optional[Any] = None
-    ) -> bool:
+    def evaluate(cls, user: Any, action: str, resource: Optional[Any] = None) -> bool:
         """
         Evaluates authorization policy for user, action, and target resource object.
         """
