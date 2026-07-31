@@ -60,6 +60,21 @@ class HasRole(BasePermission):
         return AuthorizationService.has_role(request.user, role)
 
 
+class IsAdministratorRole(BasePermission):
+    """
+    DRF permission class restricting access exclusively to Administrators and Superusers.
+    Usage:
+        permission_classes = [IsAuthenticated, IsAdministratorRole]
+    """
+
+    def has_permission(self, request, view) -> bool:
+        if not request.user or not request.user.is_authenticated:
+            return False
+        from apps.accounts.roles import RoleName
+
+        return AuthorizationService.has_role(request.user, RoleName.ADMINISTRATOR)
+
+
 class HasObjectPermission(BasePermission):
     """
     DRF permission class evaluating object-level policy authorization.

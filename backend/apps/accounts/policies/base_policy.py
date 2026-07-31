@@ -32,7 +32,7 @@ class BasePolicy(ABC):
         self, action: str, user: Any, target_object: Optional[Any] = None
     ) -> bool:
         """Generic action dispatcher method."""
-        method_name = f"can_{action}"
+        method_name = action if action.startswith("can_") else f"can_{action}"
         if hasattr(self, method_name):
             handler = getattr(self, method_name)
             return handler(user, target_object)

@@ -16,7 +16,7 @@ from apps.accounts.events import permission_denied_signal, permission_granted_si
 from apps.accounts.exceptions import PermissionDeniedException
 from apps.accounts.permissions import PermissionName
 from apps.accounts.permissions_drf import HasObjectPermission, HasPermission, HasRole
-from apps.accounts.policies import PetPolicy, PolicyEngine, UserPolicy
+from apps.accounts.policies import PolicyEngine, UserPolicy
 from apps.accounts.roles import RoleName
 from apps.accounts.services.authorization_service import AuthorizationService
 from apps.audit_logs.models import AuditLog

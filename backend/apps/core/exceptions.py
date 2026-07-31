@@ -2,7 +2,6 @@
 Custom DRF exception handler for standardized error response structures.
 """
 
-from rest_framework import status
 from rest_framework.views import exception_handler
 
 

@@ -12,8 +12,8 @@ from apps.accounts.constants import AuditAction, AuthMessage
 from apps.accounts.events import EventDispatcher
 from apps.accounts.exceptions import PermissionDeniedException
 from apps.accounts.policies.policy_engine import PolicyEngine
-from apps.accounts.role_permissions import get_permissions_for_role
 from apps.accounts.roles import RoleName
+from apps.accounts.services.role_service import RoleService
 from apps.audit_logs.services.audit_service import AuditService
 
 logger = logging.getLogger("apps.accounts")
@@ -22,6 +22,7 @@ logger = logging.getLogger("apps.accounts")
 class AuthorizationService:
     """
     Domain service executing platform RBAC and policy-based authorization logic.
+    Integrates RoleService and PolicyEngine with request-level permission caching.
     """
 
     @classmethod
@@ -29,29 +30,25 @@ class AuthorizationService:
         """Helper to get primary role of user, defaulting to accounts_config.default_role."""
         if not user or not user.is_authenticated:
             return ""
-        if user.is_superuser:
+        user_roles = RoleService.get_roles(user)
+        if RoleName.ADMINISTRATOR in user_roles:
             return RoleName.ADMINISTRATOR
-        if hasattr(user, "role") and user.role:
-            return str(user.role).upper()
-        if user.is_staff:
-            return RoleName.SHELTER_STAFF
-        return accounts_config.default_role
+        return next(iter(user_roles), accounts_config.default_role)
 
     @classmethod
     def has_permission(cls, user: Any, permission: str) -> bool:
         """
-        Checks if user has the requested permission through role mapping or superuser privilege.
+        Checks if user has the requested permission through role mapping, direct permission, or superuser privilege.
+        Uses request-level cached permission resolution for optimal performance.
         """
         if not user or not user.is_authenticated:
             return False
 
-        if user.is_superuser:
+        if getattr(user, "is_superuser", False):
             return True
 
-        user_role = cls.getUserRole(user)
-        role_permissions = get_permissions_for_role(user_role)
-
-        if permission in role_permissions:
+        user_permissions = RoleService.get_permissions(user)
+        if permission in user_permissions:
             return True
 
         if hasattr(user, "has_perm") and user.has_perm(permission):
@@ -67,11 +64,13 @@ class AuthorizationService:
         if not user or not user.is_authenticated:
             return False
 
-        if user.is_superuser and role_name.upper() == RoleName.ADMINISTRATOR:
+        if (
+            getattr(user, "is_superuser", False)
+            and role_name.upper() == RoleName.ADMINISTRATOR
+        ):
             return True
 
-        user_role = cls.getUserRole(user)
-        return user_role.upper() == role_name.upper()
+        return RoleService.has_role(user, role_name)
 
     @classmethod
     def can(cls, user: Any, action: str, resource: Optional[Any] = None) -> bool:
@@ -81,7 +80,7 @@ class AuthorizationService:
         if not user or not user.is_authenticated:
             return False
 
-        if user.is_superuser:
+        if getattr(user, "is_superuser", False):
             return True
 
         if not accounts_config.enable_policy_engine:
@@ -115,7 +114,7 @@ class AuthorizationService:
             raise PermissionDeniedException(AuthMessage.PERMISSION_DENIED)
 
         # 1. Superuser override
-        if user.is_superuser:
+        if getattr(user, "is_superuser", False):
             EventDispatcher.dispatch_permission_granted(
                 user_id=user.id,
                 email=user.email,

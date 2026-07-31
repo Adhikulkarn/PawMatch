@@ -6,7 +6,7 @@ Decouples media storage operations (avatar saving, deletion, URL generation) fro
 import logging
 import os
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 from django.core.files.storage import default_storage
 
