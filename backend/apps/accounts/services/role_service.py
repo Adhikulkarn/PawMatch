@@ -196,17 +196,17 @@ class RoleService:
         """
         Assigns a role to a user.
         Raises InvalidRoleException if role is invalid.
-        Raises DuplicateRoleException if user already has role.
+        Raises DuplicateRoleException if user already has role assigned.
         """
         normalized_role = cls._validate_role(role)
+        group = cls._get_group_for_role(normalized_role)
 
-        if cls.has_role(user, normalized_role):
+        if hasattr(user, "groups") and user.groups.filter(id=group.id).exists():
             raise DuplicateRoleException(
                 f"User {user.email} already has role '{normalized_role}' assigned."
             )
 
         with transaction.atomic():
-            group = cls._get_group_for_role(normalized_role)
             user.groups.add(group)
 
             cls._update_user_role_field(user, normalized_role)
