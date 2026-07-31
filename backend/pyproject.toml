@@ -10,3 +10,5 @@ target-version = ['py313']
 [tool.isort]
 profile = "black"
 line_length = 88
+known_first_party = ["apps", "config"]
+src_paths = ["."]

@@ -20,6 +20,19 @@ class AuditAction:
     EMAIL_VERIFICATION_FAILED = "EMAIL_VERIFICATION_FAILED"
     VERIFICATION_EMAIL_RESENT = "VERIFICATION_EMAIL_RESENT"
     RESEND_VERIFICATION_FAILED = "RESEND_VERIFICATION_FAILED"
+    PROFILE_UPDATED = "PROFILE_UPDATED"
+    AVATAR_UPLOADED = "AVATAR_UPLOADED"
+    AVATAR_DELETED = "AVATAR_DELETED"
+    ACCOUNT_DEACTIVATED = "ACCOUNT_DEACTIVATED"
+    PASSWORD_CHANGED = "PASSWORD_CHANGED"
+    PASSWORD_CHANGE_FAILED = "PASSWORD_CHANGE_FAILED"
+    PASSWORD_RESET_REQUESTED = "PASSWORD_RESET_REQUESTED"
+    PASSWORD_RESET_COMPLETED = "PASSWORD_RESET_COMPLETED"
+    PASSWORD_RESET_FAILED = "PASSWORD_RESET_FAILED"
+    AUTHORIZATION_GRANTED = "AUTHORIZATION_GRANTED"
+    AUTHORIZATION_DENIED = "AUTHORIZATION_DENIED"
+    ROLE_ASSIGNED = "ROLE_ASSIGNED"
+    ROLE_REMOVED = "ROLE_REMOVED"
 
 
 class ThrottleScope:
@@ -29,6 +42,7 @@ class ThrottleScope:
     LOGIN_USER = "login_user"
     REGISTER_ANON = "register_anon"
     RESEND_VERIFICATION = "resend_verification"
+    PASSWORD_RESET = "password_reset"
 
 
 class EmailTemplate:
@@ -36,6 +50,8 @@ class EmailTemplate:
 
     VERIFICATION_EMAIL = "emails/verification_email.html"
     WELCOME_EMAIL = "emails/welcome_email.html"
+    PASSWORD_RESET_EMAIL = "emails/password_reset_email.html"
+    PASSWORD_CHANGED_EMAIL = "emails/password_changed_email.html"
 
 
 class AuthMessage:
@@ -50,6 +66,19 @@ class AuthMessage:
     )
     EMAIL_VERIFIED_SUCCESS = "Email verified successfully. Your account is now active."
     VERIFICATION_RESENT_SUCCESS = "Verification email sent. Please check your inbox."
+    PROFILE_RETRIEVED_SUCCESS = "User profile retrieved successfully."
+    PROFILE_UPDATED_SUCCESS = "User profile updated successfully."
+    AVATAR_UPLOADED_SUCCESS = "Avatar uploaded successfully."
+    AVATAR_DELETED_SUCCESS = "Avatar deleted successfully."
+    ACCOUNT_DEACTIVATED_SUCCESS = "Account deactivated successfully."
+    PASSWORD_CHANGED_SUCCESS = "Password changed successfully."
+    FORGOT_PASSWORD_SUCCESS = (
+        "If an account with that email exists, a password reset link has been sent."
+    )
+    PASSWORD_RESET_SUCCESS = (
+        "Password reset successfully. You can now log in with your new password."
+    )
+    PERMISSION_DENIED = "You do not have permission to perform this action."
 
     INVALID_CREDENTIALS = "Invalid email or password."
     ACCOUNT_DISABLED = "Your account has been disabled."
@@ -59,3 +88,14 @@ class AuthMessage:
     EMAIL_ALREADY_VERIFIED = "Email address is already verified."
     USER_NOT_FOUND = "User with this email address does not exist."
     PASSWORD_MISMATCH = "Passwords do not match."
+    INCORRECT_PASSWORD = "Current password is incorrect."
+    SAME_PASSWORD_ERROR = "New password cannot be identical to current password."
+    PASSWORD_REUSE_ERROR = "Cannot reuse a recently used password."
+
+
+DEFAULT_USER_PREFERENCES = {
+    "email_notifications": True,
+    "marketing_emails": False,
+    "theme": "system",
+    "language": "en",
+}

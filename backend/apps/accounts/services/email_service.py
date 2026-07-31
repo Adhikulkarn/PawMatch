@@ -10,6 +10,7 @@ from typing import Any, Optional
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
+from django.utils import timezone
 from django.utils.html import strip_tags
 
 from apps.accounts.config import accounts_config
@@ -136,6 +137,84 @@ class EmailService:
         except Exception as exc:
             logger.error(
                 f"Failed to dispatch welcome email to {user.email}: {exc}",
+                extra={"user_id": str(user.id), "email": user.email},
+                exc_info=True,
+            )
+            return False
+
+    @classmethod
+    def send_password_reset_email(
+        cls, user: Any, raw_token: str, request: Optional[Any] = None
+    ) -> bool:
+        """
+        Renders and dispatches password reset link email.
+        """
+        reset_url = f"{accounts_config.frontend_reset_password_url}?token={raw_token}"
+        context = {
+            "first_name": user.first_name,
+            "reset_url": reset_url,
+            "token_expiry_hours": accounts_config.password_reset_expiry_hours,
+        }
+
+        subject = "Reset your PawMatch Password"
+        html_content = render_to_string(EmailTemplate.PASSWORD_RESET_EMAIL, context)
+        text_content = strip_tags(html_content)
+
+        try:
+            provider = cls.get_provider()
+            provider.send_email(
+                to_email=user.email,
+                subject=subject,
+                html_content=html_content,
+                text_content=text_content,
+            )
+
+            logger.info(
+                "Password reset email successfully dispatched",
+                extra={"user_id": str(user.id), "email": user.email},
+            )
+            return True
+        except Exception as exc:
+            logger.error(
+                f"Failed to dispatch password reset email to {user.email}: {exc}",
+                extra={"user_id": str(user.id), "email": user.email},
+                exc_info=True,
+            )
+            return False
+
+    @classmethod
+    def send_password_changed_email(
+        cls, user: Any, request: Optional[Any] = None
+    ) -> bool:
+        """
+        Renders and dispatches password change security confirmation email.
+        """
+        context = {
+            "first_name": user.first_name,
+            "timestamp": timezone.now().strftime("%Y-%m-%d %H:%M:%S UTC"),
+        }
+
+        subject = "Security Alert: PawMatch Password Changed"
+        html_content = render_to_string(EmailTemplate.PASSWORD_CHANGED_EMAIL, context)
+        text_content = strip_tags(html_content)
+
+        try:
+            provider = cls.get_provider()
+            provider.send_email(
+                to_email=user.email,
+                subject=subject,
+                html_content=html_content,
+                text_content=text_content,
+            )
+
+            logger.info(
+                "Password changed notification email successfully dispatched",
+                extra={"user_id": str(user.id), "email": user.email},
+            )
+            return True
+        except Exception as exc:
+            logger.error(
+                f"Failed to dispatch password changed email to {user.email}: {exc}",
                 extra={"user_id": str(user.id), "email": user.email},
                 exc_info=True,
             )
