@@ -58,7 +58,9 @@ class ShelterVerification(UUIDModel, TimestampedModel):
         _("rejection reason"),
         blank=True,
         default="",
-        help_text=_("Feedback provided to shelter if verification is rejected or needs information."),
+        help_text=_(
+            "Feedback provided to shelter if verification is rejected or needs information."
+        ),
     )
     submitted_at = models.DateTimeField(_("submitted at"), null=True, blank=True)
     reviewed_at = models.DateTimeField(_("reviewed at"), null=True, blank=True)

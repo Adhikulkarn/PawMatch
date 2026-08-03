@@ -100,6 +100,4 @@ class Shelter(UUIDModel, TimestampedModel, SoftDeleteModel):
     @property
     def owner_memberships(self):
         """Returns queryset of ShelterMember records with OWNER role for this shelter."""
-        return self.members.filter(
-            role=ShelterMemberRole.OWNER, is_active=True
-        )
+        return self.members.filter(role=ShelterMemberRole.OWNER, is_active=True)

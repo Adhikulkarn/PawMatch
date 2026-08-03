@@ -71,9 +71,7 @@ class ShelterDocument(UUIDModel, TimestampedModel):
         default=DocumentStatus.PENDING,
         db_index=True,
     )
-    rejection_reason = models.TextField(
-        _("rejection reason"), blank=True, default=""
-    )
+    rejection_reason = models.TextField(_("rejection reason"), blank=True, default="")
 
     # SET_NULL: Preserves uploaded document audit trail even if uploading user's account is removed.
     uploaded_by = models.ForeignKey(
