@@ -1,0 +1,785 @@
+================================================================================
+PawMatch API Data Structures & Frontend Developer Reference
+================================================================================
+Base URLs:
+- Production Base URL: https://pawmatch-8zwt.onrender.com
+- Localhost Base URL:  http://localhost:8000
+
+Common API Response Envelope Standards:
+All responses (except raw /health/ endpoints) follow a unified standard JSON wrapper:
+
+Success Envelope (2xx):
+{
+  "success": true,
+  "message": "Detailed success message",
+  "data": { ... }
+}
+
+Error Envelope (4xx / 5xx):
+{
+  "success": false,
+  "message": "Summary error message",
+  "errors": {
+    "field_name": [
+      "Error description detail"
+    ]
+  }
+}
+
+================================================================================
+1. SYSTEM & HEALTH CHECK ENDPOINTS
+================================================================================
+
+--------------------------------------------------------------------------------
+1.1 Root Service Health Check
+--------------------------------------------------------------------------------
+- Description:    Lightweight zero-DB probe for cloud monitoring and load balancers.
+- HTTP Methods:   GET, HEAD
+- Authentication: Public (AllowAny)
+- Production URL: https://pawmatch-8zwt.onrender.com/health/
+- Localhost URL:  http://localhost:8000/health/
+
+Request Headers:
+  (None required)
+
+Response (200 OK):
+{
+  "status": "healthy",
+  "service": "pawmatch-backend",
+  "version": "1.0.0",
+  "environment": "production",
+  "timestamp": "2026-08-03T10:00:00.000000+00:00"
+}
+
+
+--------------------------------------------------------------------------------
+1.2 API V1 Core Health Check
+--------------------------------------------------------------------------------
+- Description:    Sub-system core health probe.
+- HTTP Methods:   GET, HEAD
+- Authentication: Public (AllowAny)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/core/health/
+- Localhost URL:  http://localhost:8000/api/v1/core/health/
+
+Request Headers:
+  (None required)
+
+Response (200 OK):
+{
+  "status": "healthy",
+  "service": "pawmatch-backend",
+  "version": "1.0.0",
+  "environment": "production",
+  "timestamp": "2026-08-03T10:00:00.000000+00:00"
+}
+
+
+================================================================================
+2. AUTHENTICATION & USER ACCOUNTS ENDPOINTS
+================================================================================
+
+--------------------------------------------------------------------------------
+2.1 Register New User
+--------------------------------------------------------------------------------
+- Description:    Registers a new inactive user account and sends verification email.
+- HTTP Method:    POST
+- Authentication: Public (AllowAny)
+- Rate Limit:     Throttle protected (RegisterRateThrottle)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/register/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/register/
+
+Request Headers:
+  Content-Type: application/json
+
+Request Body:
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123!",
+  "confirm_password": "StrongPassword123!",
+  "first_name": "John",
+  "last_name": "Doe"
+}
+
+Response (201 Created):
+{
+  "success": true,
+  "message": "User registered successfully. Please check your email to verify your account.",
+  "data": {
+    "user": {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "email": "user@example.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "full_name": "John Doe",
+      "phone_number": "",
+      "profile_image": null,
+      "is_email_verified": false
+    }
+  }
+}
+
+Response (400 Bad Request):
+{
+  "success": false,
+  "message": "Validation error message",
+  "errors": {
+    "email": [
+      "A user with this email address already exists."
+    ],
+    "confirm_password": [
+      "Passwords do not match."
+    ]
+  }
+}
+
+
+--------------------------------------------------------------------------------
+2.2 Verify Email
+--------------------------------------------------------------------------------
+- Description:    Verifies email address using cryptographically signed token.
+- HTTP Methods:   GET, POST
+- Authentication: Public (AllowAny)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/verify-email/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/verify-email/
+
+GET Query Parameter Mode:
+  URL: /api/v1/accounts/verify-email/?token=d9b2e8f1a4c74892b1a03e56f789abc1
+
+POST Body Mode:
+  Request Headers:
+    Content-Type: application/json
+
+  Request Body:
+  {
+    "token": "d9b2e8f1a4c74892b1a03e56f789abc1"
+  }
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Email address verified successfully.",
+  "data": {
+    "user": {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "email": "user@example.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "full_name": "John Doe",
+      "phone_number": "",
+      "profile_image": null,
+      "is_email_verified": true
+    }
+  }
+}
+
+Response (400 Bad Request):
+{
+  "success": false,
+  "message": "Invalid or expired verification token."
+}
+
+
+--------------------------------------------------------------------------------
+2.3 Resend Email Verification
+--------------------------------------------------------------------------------
+- Description:    Invalidates old tokens and sends a new verification link.
+- HTTP Method:    POST
+- Authentication: Public (AllowAny)
+- Rate Limit:     Throttle protected (ResendVerificationRateThrottle)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/resend-verification/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/resend-verification/
+
+Request Headers:
+  Content-Type: application/json
+
+Request Body:
+{
+  "email": "user@example.com"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Verification email has been resent successfully."
+}
+
+
+--------------------------------------------------------------------------------
+2.4 User Login
+--------------------------------------------------------------------------------
+- Description:    Authenticates email and password, returning JWT tokens & user info.
+- HTTP Method:    POST
+- Authentication: Public (AllowAny)
+- Rate Limit:     Brute-force throttle protected
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/login/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/login/
+
+Request Headers:
+  Content-Type: application/json
+
+Request Body:
+{
+  "email": "user@example.com",
+  "password": "StrongPassword123!"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Login successful.",
+  "data": {
+    "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNz...",
+    "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc...",
+    "user": {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "email": "user@example.com",
+      "first_name": "John",
+      "last_name": "Doe",
+      "full_name": "John Doe",
+      "phone_number": "+1234567890",
+      "profile_image": null,
+      "is_email_verified": true
+    }
+  }
+}
+
+Frontend Developer Note:
+- Store `access` token in memory or Axios auth header.
+- Store `refresh` token securely (e.g. HttpOnly cookie or secure storage).
+- Include header `Authorization: Bearer <access>` in all authenticated API requests.
+
+
+--------------------------------------------------------------------------------
+2.5 Refresh JWT Token
+--------------------------------------------------------------------------------
+- Description:    Generates a new access token using a valid refresh token.
+- HTTP Method:    POST
+- Authentication: Public (AllowAny)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/token/refresh/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/token/refresh/
+
+Request Headers:
+  Content-Type: application/json
+
+Request Body:
+{
+  "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc..."
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Token refreshed successfully.",
+  "data": {
+    "access": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNz...",
+    "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc..."
+  }
+}
+
+
+--------------------------------------------------------------------------------
+2.6 User Logout
+--------------------------------------------------------------------------------
+- Description:    Blacklists the provided refresh token and invalidates session.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/logout/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/logout/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "refresh": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoicmVmcmVzaCIsImV4cCI6MTc..."
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Logged out successfully."
+}
+
+
+--------------------------------------------------------------------------------
+2.7 Current User Info (`me`)
+--------------------------------------------------------------------------------
+- Description:    Retrieves current authenticated user's minimal account details.
+- HTTP Method:    GET
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/me/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/me/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Current user retrieved successfully.",
+  "data": {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Doe",
+    "full_name": "John Doe",
+    "phone_number": "+1234567890",
+    "profile_image": null,
+    "is_email_verified": true
+  }
+}
+
+
+--------------------------------------------------------------------------------
+2.8 Get / Update User Profile
+--------------------------------------------------------------------------------
+- Description:    Retrieves or partially updates detailed user profile info.
+- HTTP Methods:   GET, PATCH
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/profile/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/profile/
+
+GET Request Headers:
+  Authorization: Bearer <access_token>
+
+PATCH Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+PATCH Request Body (all fields optional):
+{
+  "first_name": "John",
+  "last_name": "Smith",
+  "phone_number": "+1987654321",
+  "bio": "Animal lover, volunteer at PawMatch local shelter.",
+  "date_of_birth": "1995-05-15",
+  "preferences": {
+    "notifications_email": true,
+    "pet_types": ["DOG", "CAT"]
+  }
+}
+
+Response (200 OK - GET & PATCH):
+{
+  "success": true,
+  "message": "User profile retrieved successfully.",
+  "data": {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "email": "user@example.com",
+    "first_name": "John",
+    "last_name": "Smith",
+    "phone_number": "+1987654321",
+    "bio": "Animal lover, volunteer at PawMatch local shelter.",
+    "avatar": "https://res.cloudinary.com/demo/image/upload/v1234567890/avatar.jpg",
+    "date_of_birth": "1995-05-15",
+    "preferences": {
+      "notifications_email": true,
+      "pet_types": ["DOG", "CAT"]
+    },
+    "is_email_verified": true,
+    "date_joined": "2026-08-01T12:00:00.000000Z",
+    "last_login": "2026-08-03T10:00:00.000000Z"
+  }
+}
+
+
+--------------------------------------------------------------------------------
+2.9 Upload / Delete Avatar
+--------------------------------------------------------------------------------
+- Description:    Uploads avatar image file (via multipart/form-data) or deletes existing avatar.
+- HTTP Methods:   POST (Upload), DELETE (Remove)
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/profile/avatar/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/profile/avatar/
+
+POST Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: multipart/form-data
+
+POST Form-Data:
+  avatar: <binary image file (jpg, png, webp)>
+
+POST Response (200 OK):
+{
+  "success": true,
+  "message": "Avatar uploaded successfully.",
+  "data": {
+    "avatar": "https://res.cloudinary.com/demo/image/upload/v1234567890/avatar.jpg"
+  }
+}
+
+DELETE Request Headers:
+  Authorization: Bearer <access_token>
+
+DELETE Response (200 OK):
+{
+  "success": true,
+  "message": "Avatar deleted successfully.",
+  "data": {
+    "avatar": ""
+  }
+}
+
+
+--------------------------------------------------------------------------------
+2.10 Change Password
+--------------------------------------------------------------------------------
+- Description:    Allows logged-in users to update their password.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/change-password/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/change-password/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "current_password": "OldPassword123!",
+  "new_password": "NewPassword456!",
+  "confirm_password": "NewPassword456!"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Password changed successfully."
+}
+
+
+--------------------------------------------------------------------------------
+2.11 Forgot Password
+--------------------------------------------------------------------------------
+- Description:    Initiates password reset email flow.
+- HTTP Method:    POST
+- Authentication: Public (AllowAny)
+- Rate Limit:     Throttle protected (PasswordResetRateThrottle)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/forgot-password/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/forgot-password/
+
+Request Headers:
+  Content-Type: application/json
+
+Request Body:
+{
+  "email": "user@example.com"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "If an account exists with that email address, password reset instructions have been sent."
+}
+
+
+--------------------------------------------------------------------------------
+2.12 Reset Password
+--------------------------------------------------------------------------------
+- Description:    Resets password using verification token from reset email.
+- HTTP Method:    POST
+- Authentication: Public (AllowAny)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/reset-password/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/reset-password/
+
+Request Headers:
+  Content-Type: application/json
+
+Request Body:
+{
+  "token": "c8a1b2c3d4e5f6g7h8i9j0",
+  "new_password": "NewPassword456!",
+  "confirm_password": "NewPassword456!"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Password reset successfully. You can now log in with your new password."
+}
+
+
+--------------------------------------------------------------------------------
+2.13 Deactivate Account
+--------------------------------------------------------------------------------
+- Description:    Soft-deactivates current user account after password verification.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/accounts/deactivate/
+- Localhost URL:  http://localhost:8000/api/v1/accounts/deactivate/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "password": "CurrentPassword123!"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Account deactivated successfully."
+}
+
+
+================================================================================
+3. ROLE-BASED ACCESS CONTROL (RBAC) MANAGEMENT ENDPOINTS
+================================================================================
+Note: All RBAC endpoints require `IsAuthenticated` AND `ADMINISTRATOR` role.
+
+--------------------------------------------------------------------------------
+3.1 List Platform Roles
+--------------------------------------------------------------------------------
+- Description:    List all platform roles, display names, and assigned permissions.
+- HTTP Method:    GET
+- Authentication: Required (Bearer Token + ADMINISTRATOR Role)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/rbac/roles/
+- Localhost URL:  http://localhost:8000/api/v1/rbac/roles/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Platform roles retrieved successfully.",
+  "data": [
+    {
+      "role": "ADMINISTRATOR",
+      "display_name": "Administrator",
+      "permission_count": 45,
+      "permissions": [
+        "accounts.assign_role",
+        "accounts.view_user",
+        "pets.create_pet"
+      ]
+    },
+    {
+      "role": "SHELTER_STAFF",
+      "display_name": "Shelter Staff",
+      "permission_count": 20,
+      "permissions": [
+        "pets.create_pet",
+        "pets.update_pet"
+      ]
+    },
+    {
+      "role": "PET_ADOPTER",
+      "display_name": "Pet Adopter",
+      "permission_count": 10,
+      "permissions": [
+        "adoptions.create_application"
+      ]
+    }
+  ]
+}
+
+
+--------------------------------------------------------------------------------
+3.2 Get Role Detail
+--------------------------------------------------------------------------------
+- Description:    Retrieve permission list and details for a single role string.
+- HTTP Method:    GET
+- Authentication: Required (Bearer Token + ADMINISTRATOR Role)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/rbac/roles/<role>/
+- Localhost URL:  http://localhost:8000/api/v1/rbac/roles/<role>/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Role details retrieved successfully.",
+  "data": {
+    "role": "ADMINISTRATOR",
+    "display_name": "Administrator",
+    "permission_count": 45,
+    "permissions": [
+      "accounts.assign_role",
+      "accounts.view_user",
+      "pets.create_pet"
+    ]
+  }
+}
+
+
+--------------------------------------------------------------------------------
+3.3 Get User Roles
+--------------------------------------------------------------------------------
+- Description:    Queries all assigned roles for a target user ID (UUID).
+- HTTP Method:    GET
+- Authentication: Required (Bearer Token + ADMINISTRATOR Role)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/rbac/users/<id>/roles/
+- Localhost URL:  http://localhost:8000/api/v1/rbac/users/<id>/roles/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "User roles retrieved successfully.",
+  "data": {
+    "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "roles": [
+      "PET_ADOPTER",
+      "SHELTER_STAFF"
+    ]
+  }
+}
+
+
+--------------------------------------------------------------------------------
+3.4 Get User Permissions
+--------------------------------------------------------------------------------
+- Description:    Queries aggregated permissions across all roles for a target user ID (UUID).
+- HTTP Method:    GET
+- Authentication: Required (Bearer Token + ADMINISTRATOR Role)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/rbac/users/<id>/permissions/
+- Localhost URL:  http://localhost:8000/api/v1/rbac/users/<id>/permissions/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "User permissions retrieved successfully.",
+  "data": {
+    "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "permissions": [
+      "adoptions.create_application",
+      "pets.create_pet",
+      "pets.view_pet"
+    ]
+  }
+}
+
+
+--------------------------------------------------------------------------------
+3.5 Assign Role to User
+--------------------------------------------------------------------------------
+- Description:    Assigns a specified platform role to a user.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + ADMINISTRATOR Role)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/rbac/users/<id>/assign-role/
+- Localhost URL:  http://localhost:8000/api/v1/rbac/users/<id>/assign-role/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "role": "SHELTER_STAFF"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Role assigned successfully.",
+  "data": {
+    "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "roles": [
+      "PET_ADOPTER",
+      "SHELTER_STAFF"
+    ]
+  }
+}
+
+
+--------------------------------------------------------------------------------
+3.6 Remove Role from User
+--------------------------------------------------------------------------------
+- Description:    Removes a specified role from a user.
+- HTTP Method:    POST
+- Authentication: Required (Bearer Token + ADMINISTRATOR Role)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/rbac/users/<id>/remove-role/
+- Localhost URL:  http://localhost:8000/api/v1/rbac/users/<id>/remove-role/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "role": "SHELTER_STAFF"
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "Role removed successfully.",
+  "data": {
+    "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "roles": [
+      "PET_ADOPTER"
+    ]
+  }
+}
+
+
+--------------------------------------------------------------------------------
+3.7 Replace User Roles
+--------------------------------------------------------------------------------
+- Description:    Replaces all existing roles for a user with a new list of roles.
+- HTTP Method:    PUT
+- Authentication: Required (Bearer Token + ADMINISTRATOR Role)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/rbac/users/<id>/replace-roles/
+- Localhost URL:  http://localhost:8000/api/v1/rbac/users/<id>/replace-roles/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+  Content-Type: application/json
+
+Request Body:
+{
+  "roles": [
+    "SHELTER_STAFF",
+    "VOLUNTEER"
+  ]
+}
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "User roles replaced successfully.",
+  "data": {
+    "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "roles": [
+      "SHELTER_STAFF",
+      "VOLUNTEER"
+    ]
+  }
+}
+
+
+--------------------------------------------------------------------------------
+3.8 Clear User Roles
+--------------------------------------------------------------------------------
+- Description:    Clears all roles assigned to a user.
+- HTTP Method:    DELETE
+- Authentication: Required (Bearer Token + ADMINISTRATOR Role)
+- Production URL: https://pawmatch-8zwt.onrender.com/api/v1/rbac/users/<id>/clear-roles/
+- Localhost URL:  http://localhost:8000/api/v1/rbac/users/<id>/clear-roles/
+
+Request Headers:
+  Authorization: Bearer <access_token>
+
+Response (200 OK):
+{
+  "success": true,
+  "message": "User roles cleared successfully.",
+  "data": {
+    "user_id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "roles": []
+  }
+}
+
+================================================================================
+End of Document
+================================================================================
