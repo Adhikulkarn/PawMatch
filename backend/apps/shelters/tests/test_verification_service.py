@@ -94,7 +94,7 @@ class TestVerificationService(TestCase):
         assert v_resubmitted.status == VerificationStatus.SUBMITTED
 
     def test_verification_rejection_workflow(self):
-        """Tests rejection transition updating shelter status to REJECTED."""
+        """Tests rejection transition updating shelter status to UNVERIFIED."""
         VerificationService.submit_verification(self.verification.id)
         VerificationService.start_review(self.verification.id, self.reviewer)
 
@@ -105,7 +105,7 @@ class TestVerificationService(TestCase):
         assert v_rejected.rejection_reason == "Fraudulent tax ID"
 
         self.shelter.refresh_from_db()
-        assert self.shelter.status == ShelterStatus.REJECTED
+        assert self.shelter.status == ShelterStatus.UNVERIFIED
 
     def test_invalid_state_transition_raises_exception(self):
         """Tests that attempting an illegal state transition (DRAFT -> APPROVED directly) raises exception."""

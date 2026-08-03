@@ -153,9 +153,9 @@ class VerificationService:
             verification.rejection_reason = reason
             verification.save()
 
-            # Transition parent shelter operational status to REJECTED
+            # Transition parent shelter operational status to UNVERIFIED
             shelter = verification.shelter
-            shelter.status = ShelterStatus.REJECTED
+            shelter.status = ShelterStatus.UNVERIFIED
             shelter.save(update_fields=["status", "updated_at"])
 
         return verification
