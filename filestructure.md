@@ -177,7 +177,8 @@ PawMatch/
 │   │   │   │   ├── urls.py
 │   │   │   │   └── views.py
 │   │   │   ├── migrations/
-│   │   │   │   └── __init__.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   └── 0001_initial.py
 │   │   │   ├── models/
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── document.py
@@ -196,7 +197,12 @@ PawMatch/
 │   │   │   │   ├── shelter_service.py
 │   │   │   │   └── verification_service.py
 │   │   │   ├── tests/
-│   │   │   │   └── __init__.py
+│   │   │   │   ├── __init__.py
+│   │   │   │   ├── test_document_model.py
+│   │   │   │   ├── test_invitation_model.py
+│   │   │   │   ├── test_member_model.py
+│   │   │   │   ├── test_shelter_model.py
+│   │   │   │   └── test_verification_model.py
 │   │   │   ├── __init__.py
 │   │   │   ├── admin.py
 │   │   │   ├── apps.py
