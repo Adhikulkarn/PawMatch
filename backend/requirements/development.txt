@@ -3,10 +3,10 @@
 -r base.txt
 
 # Development Tooling & Linters
-black>=24.4.2
-flake8>=7.1.0
-isort>=5.13.2
+black
+flake8
+isort
 
 # Testing Frameworks
-pytest>=8.2.2
-pytest-django>=4.8.0
+pytest
+pytest-django

@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import Logo from '../Logo/Logo';
 import Button from '../Button/Button';
+import { useAuth } from '../../contexts/AuthContext';
 import './Navbar.css';
 
 export const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -21,12 +26,12 @@ export const Navbar = () => {
   }, []);
 
   const navLinks = [
-    { name: 'Home', href: '#home' },
-    { name: 'Adopt Pets', href: '#adopt' },
-    { name: 'How It Works', href: '#how-it-works' },
-    { name: 'Shelters', href: '#shelters' },
-    { name: 'About', href: '#about' },
-    { name: 'Contact', href: '#contact' },
+    { name: 'Home', href: '/#home' },
+    { name: 'Adopt Pets', href: '/#adopt' },
+    { name: 'How It Works', href: '/#how-it-works' },
+    { name: 'Shelters', href: '/#shelters' },
+    { name: 'About', href: '/#about' },
+    { name: 'Contact', href: '/#contact' },
   ];
 
   const toggleMobileMenu = () => {
@@ -41,7 +46,9 @@ export const Navbar = () => {
     <header className={`navbar-header ${isScrolled ? 'scrolled glass-panel' : ''}`}>
       <div className="container navbar-container">
         {/* Logo */}
-        <Logo size="medium" />
+        <Link to="/">
+          <Logo size="medium" />
+        </Link>
 
         {/* Desktop Navigation Links */}
         <nav className="desktop-nav" aria-label="Main Navigation">
@@ -58,12 +65,28 @@ export const Navbar = () => {
 
         {/* Auth Buttons Desktop */}
         <div className="nav-auth-actions">
-          <Button variant="ghost" size="sm" className="login-btn">
-            Login
-          </Button>
-          <Button variant="primary" size="sm" className="signup-btn">
-            Sign Up
-          </Button>
+          {isAuthenticated ? (
+            <>
+              <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard')}>
+                Dashboard ({user?.first_name || 'Account'})
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => navigate('/profile')}>
+                Profile
+              </Button>
+              <Button variant="primary" size="sm" onClick={logout}>
+                Log Out
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" className="login-btn" onClick={() => navigate('/login')}>
+                Login
+              </Button>
+              <Button variant="primary" size="sm" className="signup-btn" onClick={() => navigate('/register')}>
+                Sign Up
+              </Button>
+            </>
+          )}
         </div>
 
         {/* Mobile Hamburger Button */}
@@ -106,12 +129,25 @@ export const Navbar = () => {
               </ul>
             </nav>
             <div className="mobile-auth-actions">
-              <Button variant="outline" fullWidth size="md" onClick={closeMobileMenu}>
-                Login
-              </Button>
-              <Button variant="primary" fullWidth size="md" onClick={closeMobileMenu}>
-                Sign Up
-              </Button>
+              {isAuthenticated ? (
+                <>
+                  <Button variant="outline" fullWidth size="md" onClick={() => { closeMobileMenu(); navigate('/dashboard'); }}>
+                    Dashboard
+                  </Button>
+                  <Button variant="primary" fullWidth size="md" onClick={() => { closeMobileMenu(); logout(); }}>
+                    Log Out
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" fullWidth size="md" onClick={() => { closeMobileMenu(); navigate('/login'); }}>
+                    Login
+                  </Button>
+                  <Button variant="primary" fullWidth size="md" onClick={() => { closeMobileMenu(); navigate('/register'); }}>
+                    Sign Up
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
