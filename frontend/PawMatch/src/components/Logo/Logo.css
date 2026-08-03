@@ -1,0 +1,61 @@
+.pawmatch-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  text-decoration: none;
+  color: var(--color-text-main);
+  transition: transform var(--transition-fast);
+}
+
+.pawmatch-logo:hover {
+  transform: translateY(-1px);
+}
+
+.logo-icon-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-accent-brown);
+  transition: color var(--transition-fast);
+}
+
+.pawmatch-logo.light .logo-icon-wrapper {
+  color: #F5F0E8;
+}
+
+.logo-svg {
+  width: 2.25rem;
+  height: 2.25rem;
+}
+
+.logo-small .logo-svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.logo-large .logo-svg {
+  width: 3rem;
+  height: 3rem;
+}
+
+.logo-brand-name {
+  font-family: var(--font-heading);
+  font-size: 1.65rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--color-text-main);
+}
+
+.pawmatch-logo.light .logo-brand-name {
+  color: var(--color-text-inverse);
+}
+
+.brand-highlight {
+  color: var(--color-accent-brown);
+  font-weight: 600;
+  font-style: italic;
+}
+
+.pawmatch-logo.light .brand-highlight {
+  color: #E2B784;
+}

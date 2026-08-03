@@ -1,0 +1,144 @@
+.shelter-banner-section {
+  padding: 4rem 0;
+  background-color: var(--color-bg-cream);
+}
+
+.shelter-banner-card {
+  background: linear-gradient(135deg, #F5F0E8 0%, #EFE5D8 100%);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 4rem 3.5rem;
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 1.3fr 0.7fr;
+  align-items: center;
+  gap: 2rem;
+  box-shadow: var(--shadow-card);
+}
+
+.banner-content {
+  position: relative;
+  z-index: 2;
+}
+
+.banner-badge {
+  display: inline-block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-accent-brown);
+  background-color: rgba(139, 90, 43, 0.12);
+  padding: 0.35rem 1rem;
+  border-radius: var(--radius-pill);
+  margin-bottom: 1.25rem;
+}
+
+.banner-title {
+  font-size: clamp(2rem, 3.2vw, 2.75rem);
+  font-weight: 700;
+  color: var(--color-text-main);
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+.banner-description {
+  font-size: 1.05rem;
+  color: var(--color-dark-muted);
+  line-height: 1.65;
+  margin-bottom: 2rem;
+  max-width: 580px;
+}
+
+.banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.btn-arrow-icon {
+  width: 1.2rem;
+  height: 1.2rem;
+  transition: transform var(--transition-fast);
+}
+
+.banner-btn:hover .btn-arrow-icon {
+  transform: translateX(4px);
+}
+
+.banner-visual-decor {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+}
+
+.decor-circle {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.circle-1 {
+  width: 260px;
+  height: 260px;
+  background: rgba(139, 90, 43, 0.06);
+}
+
+.circle-2 {
+  width: 180px;
+  height: 180px;
+  background: rgba(139, 90, 43, 0.08);
+}
+
+.shelter-badge-graphic {
+  position: relative;
+  z-index: 2;
+  background-color: var(--color-card);
+  padding: 1.5rem 2rem;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-hover);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  border: 1px solid var(--color-border);
+}
+
+.shelter-badge-graphic svg {
+  width: 2.75rem;
+  height: 2.75rem;
+  color: var(--color-accent-brown);
+}
+
+.shelter-badge-graphic span {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+}
+
+/* Responsiveness */
+@media (max-width: 992px) {
+  .shelter-banner-card {
+    grid-template-columns: 1fr;
+    padding: 3rem 2rem;
+  }
+
+  .banner-visual-decor {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .banner-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .banner-btn,
+  .banner-secondary-btn {
+    width: 100%;
+  }
+}
