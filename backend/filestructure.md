@@ -1,104 +1,129 @@
 # PawMatch Backend File Structure
 
-This document outlines the file tree and directory structure of the **PawMatch** Django backend.
-
----
-
-## 1. Directory File Tree
-
 ```text
 backend/
-├── .dockerignore
-├── .env
-├── .env.development
-├── .env.example
-├── .env.production
-├── .env.staging
-├── .gitignore
-├── Dockerfile
-├── README.md
-├── build.sh
-├── docker-compose.yml
-├── filestructure.md
-├── gunicorn.conf.py
-├── manage.py
-├── pyproject.toml
-├── render.yaml
 ├── apps/
-│   ├── __init__.py
 │   ├── accounts/
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── apps.py
-│   │   ├── models.py
 │   │   ├── api/
 │   │   │   ├── __init__.py
 │   │   │   ├── serializers.py
 │   │   │   ├── urls.py
 │   │   │   └── views.py
+│   │   ├── documentation/
+│   │   │   └── rbac_swagger.py
+│   │   ├── management/
+│   │   │   └── commands/
+│   │   │       └── sync_rbac.py
 │   │   ├── migrations/
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── profile.py
+│   │   │   ├── rbac.py
+│   │   │   └── user.py
+│   │   ├── policies/
 │   │   │   └── __init__.py
 │   │   ├── selectors/
 │   │   │   └── __init__.py
 │   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── auth_service.py
+│   │   │   ├── password_service.py
+│   │   │   ├── profile_service.py
+│   │   │   ├── registration_service.py
+│   │   │   └── role_service.py
+│   │   ├── templates/
+│   │   │   └── emails/
+│   │   │       ├── password_reset.html
+│   │   │       ├── password_reset.txt
+│   │   │       ├── verification.html
+│   │   │       └── verification.txt
+│   │   ├── tests/
+│   │   │   ├── __init__.py
+│   │   │   ├── test_authentication.py
+│   │   │   ├── test_authorization.py
+│   │   │   ├── test_drf_integration.py
+│   │   │   ├── test_models.py
+│   │   │   ├── test_password.py
+│   │   │   ├── test_profile.py
+│   │   │   ├── test_rbac_admin_tooling.py
+│   │   │   ├── test_rbac_api.py
+│   │   │   ├── test_rbac_e2e.py
+│   │   │   ├── test_rbac_events_logging.py
+│   │   │   ├── test_rbac_sync.py
+│   │   │   ├── test_registration.py
+│   │   │   └── test_role_service.py
+│   │   ├── validators/
 │   │   │   └── __init__.py
-│   │   └── tests/
-│   │       └── __init__.py
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── auth_decorators.py
+│   │   ├── config.py
+│   │   ├── constants.py
+│   │   ├── events.py
+│   │   ├── exceptions.py
+│   │   ├── managers.py
+│   │   ├── permissions.py
+│   │   ├── permissions_drf.py
+│   │   ├── role_permissions.py
+│   │   ├── roles.py
+│   │   ├── signals.py
+│   │   ├── throttles.py
+│   │   └── utils.py
 │   ├── administration/
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── apps.py
-│   │   ├── models.py
 │   │   ├── api/
 │   │   │   ├── __init__.py
 │   │   │   ├── serializers.py
 │   │   │   ├── urls.py
 │   │   │   └── views.py
 │   │   ├── migrations/
-│   │   │   └── __init__.py
 │   │   ├── selectors/
-│   │   │   └── __init__.py
 │   │   ├── services/
-│   │   │   └── __init__.py
-│   │   └── tests/
-│   │       └── __init__.py
+│   │   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   └── models.py
 │   ├── adoptions/
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── apps.py
-│   │   ├── models.py
 │   │   ├── api/
 │   │   │   ├── __init__.py
 │   │   │   ├── serializers.py
 │   │   │   ├── urls.py
 │   │   │   └── views.py
 │   │   ├── migrations/
-│   │   │   └── __init__.py
 │   │   ├── selectors/
-│   │   │   └── __init__.py
 │   │   ├── services/
-│   │   │   └── __init__.py
-│   │   └── tests/
-│   │       └── __init__.py
+│   │   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   └── models.py
 │   ├── audit_logs/
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── apps.py
-│   │   ├── models.py
 │   │   ├── api/
 │   │   │   ├── __init__.py
 │   │   │   ├── serializers.py
 │   │   │   ├── urls.py
 │   │   │   └── views.py
 │   │   ├── migrations/
-│   │   │   └── __init__.py
 │   │   ├── selectors/
-│   │   │   └── __init__.py
 │   │   ├── services/
-│   │   │   └── __init__.py
-│   │   └── tests/
-│   │       └── __init__.py
+│   │   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   └── models.py
 │   ├── core/
+│   │   ├── api/
+│   │   │   ├── __init__.py
+│   │   │   ├── serializers.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   ├── migrations/
+│   │   ├── selectors/
+│   │   ├── services/
+│   │   ├── tests/
+│   │   │   ├── __init__.py
+│   │   │   └── test_health.py
 │   │   ├── __init__.py
 │   │   ├── admin.py
 │   │   ├── apps.py
@@ -109,46 +134,39 @@ backend/
 │   │   ├── models.py
 │   │   ├── pagination.py
 │   │   ├── permissions.py
+│   │   ├── responses.py
 │   │   ├── signals.py
 │   │   ├── utils.py
-│   │   ├── validators.py
-│   │   ├── api/
-│   │   │   ├── __init__.py
-│   │   │   ├── serializers.py
-│   │   │   ├── urls.py
-│   │   │   └── views.py
-│   │   ├── migrations/
-│   │   │   └── __init__.py
-│   │   ├── selectors/
-│   │   │   └── __init__.py
-│   │   ├── services/
-│   │   │   └── __init__.py
-│   │   └── tests/
-│   │       ├── __init__.py
-│   │       └── test_health.py
+│   │   └── validators.py
 │   ├── notifications/
-│   │   ├── __init__.py
-│   │   ├── admin.py
-│   │   ├── apps.py
-│   │   ├── models.py
 │   │   ├── api/
 │   │   │   ├── __init__.py
 │   │   │   ├── serializers.py
 │   │   │   ├── urls.py
 │   │   │   └── views.py
 │   │   ├── migrations/
-│   │   │   └── __init__.py
 │   │   ├── selectors/
-│   │   │   └── __init__.py
 │   │   ├── services/
-│   │   │   └── __init__.py
-│   │   └── tests/
-│   │       └── __init__.py
+│   │   ├── tests/
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   └── models.py
 │   ├── pets/
+│   │   ├── api/
+│   │   │   ├── __init__.py
+│   │   │   ├── serializers.py
+│   │   │   ├── urls.py
+│   │   │   └── views.py
+│   │   ├── migrations/
+│   │   ├── selectors/
+│   │   ├── services/
+│   │   ├── tests/
 │   │   ├── __init__.py
 │   │   ├── admin.py
 │   │   ├── apps.py
-│   │   ├── models.py
+│   │   └── models.py
+│   ├── shelters/
 │   │   ├── api/
 │   │   │   ├── __init__.py
 │   │   │   ├── serializers.py
@@ -156,65 +174,67 @@ backend/
 │   │   │   └── views.py
 │   │   ├── migrations/
 │   │   │   └── __init__.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── document.py
+│   │   │   ├── invitation.py
+│   │   │   ├── member.py
+│   │   │   ├── shelter.py
+│   │   │   └── verification.py
 │   │   ├── selectors/
-│   │   │   └── __init__.py
+│   │   │   ├── __init__.py
+│   │   │   ├── shelter_selector.py
+│   │   │   └── verification_selector.py
 │   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── invitation_service.py
+│   │   │   ├── member_service.py
+│   │   │   ├── shelter_service.py
+│   │   │   └── verification_service.py
+│   │   ├── tests/
 │   │   │   └── __init__.py
-│   │   └── tests/
-│   │       └── __init__.py
-│   └── shelters/
-│       ├── __init__.py
-│       ├── admin.py
-│       ├── apps.py
-│       ├── models.py
-│       ├── api/
-│       │   ├── __init__.py
-│       │   ├── serializers.py
-│       │   ├── urls.py
-│       │   └── views.py
-│       ├── migrations/
-│       │   └── __init__.py
-│       ├── selectors/
-│       │   └── __init__.py
-│       ├── services/
-│       │   └── __init__.py
-│       └── tests/
-│           └── __init__.py
+│   │   ├── __init__.py
+│   │   ├── admin.py
+│   │   ├── apps.py
+│   │   ├── constants.py
+│   │   ├── exceptions.py
+│   │   ├── permissions.py
+│   │   ├── signals.py
+│   │   └── validators.py
+│   └── __init__.py
 ├── config/
+│   ├── api/
+│   │   ├── v1/
+│   │   │   ├── __init__.py
+│   │   │   └── urls.py
+│   │   ├── __init__.py
+│   │   ├── urls.py
+│   │   └── versioning.py
+│   ├── settings/
+│   │   ├── __init__.py
+│   │   ├── base.py
+│   │   ├── development.py
+│   │   ├── logging.py
+│   │   ├── production.py
+│   │   └── staging.py
 │   ├── __init__.py
 │   ├── asgi.py
 │   ├── urls.py
-│   ├── wsgi.py
-│   ├── api/
-│   │   ├── __init__.py
-│   │   ├── urls.py
-│   │   ├── versioning.py
-│   │   └── v1/
-│   │       ├── __init__.py
-│   │       └── urls.py
-│   └── settings/
-│       ├── __init__.py
-│       ├── base.py
-│       ├── development.py
-│       ├── logging.py
-│       ├── production.py
-│       └── staging.py
-└── requirements/
-    ├── base.txt
-    ├── development.txt
-    ├── production.txt
-    └── testing.txt
+│   └── wsgi.py
+├── requirements/
+│   ├── base.txt
+│   ├── development.txt
+│   ├── production.txt
+│   └── testing.txt
+├── .dockerignore
+├── .gitignore
+├── Dockerfile
+├── README.md
+├── build.sh
+├── docker-compose.yml
+├── filestructure.md
+├── gunicorn.conf.py
+├── manage.py
+├── pyproject.toml
+└── render.yaml
 ```
-
----
-
-## 2. Infrastructure & Deployment Files
-
-- **`.github/workflows/backend.yml`**: GitHub Actions CI workflow performing formatting checks, linting, Django security checks, unit tests, and Docker build validation.
-- **`Dockerfile`**: Multi-stage production container build configuration for OCI compliance.
-- **`.dockerignore`**: Excludes caches, virtual environments, logs, and sensitive `.env` files from Docker context.
-- **`gunicorn.conf.py`**: Production WSGI server configuration with CPU auto-scaling.
-- **`build.sh`**: Render deployment script executing static collection and database migrations (`set -o errexit`).
-- **`render.yaml`**: Infrastructure-as-Code specification for Render Blueprint deployments.
-- **`docker-compose.yml`**: Development orchestration for running backend container locally with expansion slots for Redis and PostgreSQL.
-- **`pyproject.toml`**: Configurator for pytest, black, and isort.
