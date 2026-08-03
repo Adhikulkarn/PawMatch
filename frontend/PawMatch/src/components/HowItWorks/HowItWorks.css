@@ -1,0 +1,128 @@
+.how-it-works-section {
+  background-color: var(--color-bg-beige);
+  position: relative;
+  overflow: hidden;
+}
+
+.timeline-container {
+  position: relative;
+  margin-top: 3.5rem;
+}
+
+.timeline-line {
+  position: absolute;
+  top: 75px;
+  left: 5%;
+  right: 5%;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(139, 90, 43, 0.1) 0%,
+    rgba(139, 90, 43, 0.4) 50%,
+    rgba(139, 90, 43, 0.1) 100%
+  );
+  z-index: 1;
+}
+
+.timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.75rem;
+  position: relative;
+  z-index: 2;
+}
+
+.timeline-card-wrapper {
+  display: flex;
+}
+
+.timeline-card {
+  background-color: var(--color-card);
+  padding: 2.25rem 1.5rem 2rem 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  transition: var(--transition-normal);
+  width: 100%;
+}
+
+.timeline-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-card);
+  border-color: var(--color-accent-brown);
+}
+
+.step-badge {
+  position: absolute;
+  top: -1.25rem;
+  background-color: var(--color-accent-brown);
+  color: var(--color-text-inverse);
+  font-family: var(--font-heading);
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.3rem 0.9rem;
+  border-radius: var(--radius-pill);
+  box-shadow: 0 4px 10px rgba(139, 90, 43, 0.3);
+}
+
+.step-icon-box {
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 50%;
+  background-color: var(--color-accent-brown-light);
+  color: var(--color-accent-brown);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  margin-top: 0.5rem;
+  transition: var(--transition-fast);
+}
+
+.timeline-card:hover .step-icon-box {
+  background-color: var(--color-accent-brown);
+  color: var(--color-text-inverse);
+  transform: scale(1.1);
+}
+
+.step-icon-box svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.step-title {
+  font-size: 1.35rem;
+  font-weight: 600;
+  color: var(--color-text-main);
+  margin-bottom: 0.75rem;
+}
+
+.step-description {
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+/* Responsiveness */
+@media (max-width: 1024px) {
+  .timeline-line {
+    display: none;
+  }
+
+  .timeline-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 2.5rem 1.5rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .timeline-grid {
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+  }
+}
