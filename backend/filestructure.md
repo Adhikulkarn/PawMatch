@@ -173,13 +173,34 @@ backend/
 │   │   │   ├── urls.py
 │   │   │   └── views.py
 │   │   ├── migrations/
+│   │   │   └── __init__.py
+│   │   ├── models/
+│   │   │   ├── __init__.py
+│   │   │   ├── document.py
+│   │   │   ├── invitation.py
+│   │   │   ├── member.py
+│   │   │   ├── shelter.py
+│   │   │   └── verification.py
 │   │   ├── selectors/
+│   │   │   ├── __init__.py
+│   │   │   ├── shelter_selector.py
+│   │   │   └── verification_selector.py
 │   │   ├── services/
+│   │   │   ├── __init__.py
+│   │   │   ├── invitation_service.py
+│   │   │   ├── member_service.py
+│   │   │   ├── shelter_service.py
+│   │   │   └── verification_service.py
 │   │   ├── tests/
+│   │   │   └── __init__.py
 │   │   ├── __init__.py
 │   │   ├── admin.py
 │   │   ├── apps.py
-│   │   └── models.py
+│   │   ├── constants.py
+│   │   ├── exceptions.py
+│   │   ├── permissions.py
+│   │   ├── signals.py
+│   │   └── validators.py
 │   └── __init__.py
 ├── config/
 │   ├── api/
