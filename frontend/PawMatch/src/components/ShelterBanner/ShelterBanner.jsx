@@ -1,8 +1,15 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../Button/Button';
 import './ShelterBanner.css';
 
 export const ShelterBanner = () => {
+  const navigate = useNavigate();
+
+  const handleRegisterShelter = () => {
+    navigate('/register');
+  };
+
   return (
     <section id="shelters" className="shelter-banner-section">
       <div className="container">
@@ -14,13 +21,13 @@ export const ShelterBanner = () => {
               Join PawMatch to expand your reach, manage digital adoption applications seamlessly, and connect your animals with loving families faster.
             </p>
             <div className="banner-actions">
-              <Button variant="primary" size="lg" className="banner-btn">
+              <Button variant="primary" size="lg" className="banner-btn" onClick={handleRegisterShelter}>
                 Register Your Shelter
                 <svg className="btn-arrow-icon" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
               </Button>
-              <Button variant="outline" size="lg" className="banner-secondary-btn">
+              <Button variant="outline" size="lg" className="banner-secondary-btn" onClick={handleRegisterShelter}>
                 Learn Partner Benefits
               </Button>
             </div>

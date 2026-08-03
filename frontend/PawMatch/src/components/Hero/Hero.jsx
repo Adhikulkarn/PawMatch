@@ -1,9 +1,31 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import Button from '../Button/Button';
+import { useAuth } from '../../contexts/AuthContext';
 import heroImg from '../../assets/images/hero/hero-golden-retriever.jpg';
 import './Hero.css';
 
 export const Hero = () => {
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
+
+  const handleAdoptClick = () => {
+    if (isAuthenticated) {
+      const adoptElement = document.getElementById('adopt');
+      if (adoptElement) {
+        adoptElement.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        navigate('/dashboard');
+      }
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const handleRegisterShelterClick = () => {
+    navigate('/register');
+  };
+
   return (
     <section id="home" className="hero-section">
       {/* Background Image Layer */}
@@ -33,13 +55,13 @@ export const Hero = () => {
           </p>
 
           <div className="hero-cta-group">
-            <Button variant="primary" size="lg" className="hero-primary-btn">
+            <Button variant="primary" size="lg" className="hero-primary-btn" onClick={handleAdoptClick}>
               Adopt a Pet
               <svg className="cta-arrow" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clipRule="evenodd" />
               </svg>
             </Button>
-            <Button variant="outline" size="lg" className="hero-secondary-btn">
+            <Button variant="outline" size="lg" className="hero-secondary-btn" onClick={handleRegisterShelterClick}>
               Register a Shelter
             </Button>
           </div>
