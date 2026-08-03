@@ -188,6 +188,8 @@ PawMatch/
 │   │   │   │   └── verification.py
 │   │   │   ├── selectors/
 │   │   │   │   ├── __init__.py
+│   │   │   │   ├── invitation_selector.py
+│   │   │   │   ├── member_selector.py
 │   │   │   │   ├── shelter_selector.py
 │   │   │   │   └── verification_selector.py
 │   │   │   ├── services/
@@ -200,9 +202,13 @@ PawMatch/
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── test_document_model.py
 │   │   │   │   ├── test_invitation_model.py
+│   │   │   │   ├── test_invitation_service.py
 │   │   │   │   ├── test_member_model.py
+│   │   │   │   ├── test_member_service.py
 │   │   │   │   ├── test_shelter_model.py
-│   │   │   │   └── test_verification_model.py
+│   │   │   │   ├── test_shelter_service.py
+│   │   │   │   ├── test_verification_model.py
+│   │   │   │   └── test_verification_service.py
 │   │   │   ├── __init__.py
 │   │   │   ├── admin.py
 │   │   │   ├── apps.py
