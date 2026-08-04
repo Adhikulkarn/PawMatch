@@ -13,6 +13,7 @@ from rest_framework import filters, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, ValidationError
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -47,6 +48,18 @@ from apps.shelters.exceptions import (
     VerificationWorkflowException,
 )
 from apps.shelters.models import Shelter
+from apps.shelters.permissions import (
+    CanDeleteDocument,
+    CanInviteMembers,
+    CanManageMember,
+    CanManageShelter,
+    CanReviewVerification,
+    CanRevokeInvitation,
+    CanViewShelter,
+    IsShelterManager,
+    IsShelterMember,
+    IsShelterStaff,
+)
 from apps.shelters.selectors import (
     get_active_verification,
     get_shelter_by_id,
@@ -138,6 +151,37 @@ class ShelterViewSet(viewsets.GenericViewSet):
     search_fields = ["name", "legal_name", "city", "state"]
     ordering_fields = ["created_at", "name", "status"]
     ordering = ["-created_at"]
+
+    def get_permissions(self):
+        """Dynamic permission class mapping per endpoint action."""
+        if self.action in ["list", "create"]:
+            return [IsAuthenticated()]
+        if self.action == "retrieve":
+            return [IsAuthenticated(), CanViewShelter()]
+        if self.action == "partial_update":
+            return [IsAuthenticated(), CanManageShelter()]
+        if self.action == "submit_verification":
+            return [IsAuthenticated(), CanManageShelter()]
+        if self.action in [
+            "start_review",
+            "request_information",
+            "approve_verification",
+            "reject_verification",
+        ]:
+            return [IsAuthenticated(), CanReviewVerification()]
+        if self.action == "documents":
+            if self.request and self.request.method.upper() == "POST":
+                return [IsAuthenticated(), IsShelterStaff()]
+            return [IsAuthenticated(), IsShelterMember()]
+        if self.action == "members":
+            if self.request and self.request.method.upper() == "POST":
+                return [IsAuthenticated(), CanInviteMembers()]
+            return [IsAuthenticated(), IsShelterMember()]
+        if self.action == "invitations":
+            if self.request and self.request.method.upper() == "POST":
+                return [IsAuthenticated(), CanInviteMembers()]
+            return [IsAuthenticated(), IsShelterManager()]
+        return [IsAuthenticated()]
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -509,6 +553,8 @@ class ShelterViewSet(viewsets.GenericViewSet):
 class DocumentDetailAPIView(viewsets.ViewSet):
     """Standalone API view for single document operations."""
 
+    permission_classes = [IsAuthenticated, CanDeleteDocument]
+
     @handle_domain_exceptions
     def destroy(self, request: Request, pk: str = None) -> Response:
         doc_id = _to_uuid(pk)
@@ -531,6 +577,8 @@ class DocumentDetailAPIView(viewsets.ViewSet):
 )
 class MemberDetailAPIView(viewsets.ViewSet):
     """Standalone API view for single member role updates and deletion."""
+
+    permission_classes = [IsAuthenticated, CanManageMember]
 
     @handle_domain_exceptions
     def partial_update(self, request: Request, pk: str = None) -> Response:
@@ -555,6 +603,11 @@ class MemberDetailAPIView(viewsets.ViewSet):
 
 class InvitationStandaloneViewSet(viewsets.ViewSet):
     """Standalone ViewSet for global invitation accept and revoke actions."""
+
+    def get_permissions(self):
+        if self.action == "revoke_invitation":
+            return [IsAuthenticated(), CanRevokeInvitation()]
+        return [IsAuthenticated()]
 
     @extend_schema(
         summary="Accept Shelter Invitation",
