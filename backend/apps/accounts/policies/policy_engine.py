@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Type
 from apps.accounts.models import User, UserProfile
 from apps.accounts.policies.base_policy import BasePolicy
 from apps.accounts.policies.pet_policy import PetPolicy
+from apps.accounts.policies.shelter_policy import ShelterPolicy
 from apps.accounts.policies.user_policy import UserPolicy
 
 
@@ -21,6 +22,11 @@ class PolicyEngine:
         UserProfile: UserPolicy,
         "user": UserPolicy,
         "pet": PetPolicy,
+        "shelter": ShelterPolicy,
+        "sheltermember": ShelterPolicy,
+        "shelterinvitation": ShelterPolicy,
+        "shelterverification": ShelterPolicy,
+        "shelterdocument": ShelterPolicy,
     }
 
     @classmethod
