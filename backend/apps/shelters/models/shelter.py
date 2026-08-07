@@ -6,7 +6,8 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 
 from apps.core.mixins import SoftDeleteModel, TimestampedModel, UUIDModel
-from apps.shelters.constants import ShelterMemberRole, ShelterStatus
+from apps.shelters.constants import OrganizationType, ShelterMemberRole, ShelterStatus
+from apps.shelters.managers import ShelterManager
 
 
 class Shelter(UUIDModel, TimestampedModel, SoftDeleteModel):
@@ -23,6 +24,13 @@ class Shelter(UUIDModel, TimestampedModel, SoftDeleteModel):
     slug = models.SlugField(_("slug"), max_length=255, unique=True, db_index=True)
     legal_name = models.CharField(
         _("legal name"), max_length=255, blank=True, default=""
+    )
+    organization_type = models.CharField(
+        _("organization type"),
+        max_length=50,
+        choices=OrganizationType.choices,
+        default=OrganizationType.NON_PROFIT,
+        db_index=True,
     )
     registration_number = models.CharField(
         _("registration number"), max_length=100, blank=True, default=""
@@ -71,6 +79,8 @@ class Shelter(UUIDModel, TimestampedModel, SoftDeleteModel):
         help_text=_("Designates whether this shelter is active on the platform."),
     )
 
+    objects = ShelterManager()
+
     class Meta:
         verbose_name = _("shelter")
         verbose_name_plural = _("shelters")
@@ -79,6 +89,7 @@ class Shelter(UUIDModel, TimestampedModel, SoftDeleteModel):
             models.Index(fields=["name"]),
             models.Index(fields=["city", "state"]),
             models.Index(fields=["status", "is_active"]),
+            models.Index(fields=["organization_type"]),
         ]
 
     def __str__(self) -> str:
@@ -101,3 +112,9 @@ class Shelter(UUIDModel, TimestampedModel, SoftDeleteModel):
     def owner_memberships(self):
         """Returns queryset of ShelterMember records with OWNER role for this shelter."""
         return self.members.filter(role=ShelterMemberRole.OWNER, is_active=True)
+
+    @property
+    def full_address(self) -> str:
+        """Returns formatted full address string of shelter."""
+        line2 = f", {self.address_line2}" if self.address_line2 else ""
+        return f"{self.address_line1}{line2}, {self.city}, {self.state} {self.postal_code}, {self.country}"

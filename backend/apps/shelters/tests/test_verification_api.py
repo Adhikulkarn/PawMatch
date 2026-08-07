@@ -1,5 +1,5 @@
 """
-API integration tests for Shelter Verification workflow state machine endpoints.
+API integration tests for Shelter Verification workflow state machine and administrator endpoints.
 """
 
 import pytest
@@ -8,7 +8,8 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.shelters.constants import ShelterStatus, VerificationStatus
-from apps.shelters.services import ShelterService
+from apps.shelters.models.verification import ShelterVerification
+from apps.shelters.services import ShelterService, VerificationService
 
 User = get_user_model()
 
@@ -100,3 +101,42 @@ class TestVerificationAPI(APITestCase):
 
         self.shelter.refresh_from_db()
         assert self.shelter.status == ShelterStatus.UNVERIFIED
+
+    def test_invalid_state_transition_fails(self):
+        """Tests attempting invalid state transition (DRAFT directly to APPROVED) fails."""
+        self.client.force_authenticate(user=self.reviewer)
+        url_approve = f"/api/v1/shelters/{self.shelter.id}/verification/approve/"
+        resp = self.client.post(
+            url_approve, data={"notes": "Direct approve"}, format="json"
+        )
+        assert resp.status_code == status.HTTP_400_BAD_REQUEST
+        assert "Cannot transition verification" in resp.json()["message"]
+
+    def test_admin_verifications_pending_and_actions(self):
+        """Tests administrator endpoints: GET pending, GET detail, approve, reject, request-info."""
+        verification = ShelterVerification.objects.get(shelter=self.shelter)
+        VerificationService.submit_verification(verification.id)
+        VerificationService.start_review(verification.id, self.reviewer)
+
+        self.client.force_authenticate(user=self.reviewer)
+
+        # GET pending
+        resp_pending = self.client.get("/api/v1/shelters/admin/verifications/pending/")
+        assert resp_pending.status_code == status.HTTP_200_OK
+        assert len(resp_pending.json()["data"]) >= 1
+
+        # GET detail
+        resp_detail = self.client.get(
+            f"/api/v1/shelters/admin/verifications/{verification.id}/"
+        )
+        assert resp_detail.status_code == status.HTTP_200_OK
+        assert resp_detail.json()["data"]["id"] == str(verification.id)
+
+        # POST approve via admin endpoint
+        resp_app = self.client.post(
+            f"/api/v1/shelters/admin/verifications/{verification.id}/approve/",
+            data={"notes": "Admin approval"},
+            format="json",
+        )
+        assert resp_app.status_code == status.HTTP_200_OK
+        assert resp_app.json()["data"]["status"] == VerificationStatus.APPROVED

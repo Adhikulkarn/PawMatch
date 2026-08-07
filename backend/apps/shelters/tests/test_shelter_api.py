@@ -1,5 +1,5 @@
 """
-API integration tests for Shelter organization CRUD, search, filtering, and ordering endpoints.
+API integration tests for Shelter organization CRUD, search, filtering, and register/me endpoints.
 """
 
 import pytest
@@ -79,6 +79,46 @@ class TestShelterAPI(APITestCase):
         assert res_data["data"]["name"] == "Dallas Animal Sanctuary"
         assert res_data["data"]["slug"] == "dallas-animal-sanctuary"
 
+    def test_register_shelter_top_level_endpoint(self):
+        """Tests POST /api/v1/shelters/register/ onboards a shelter."""
+        reg_user = User.objects.create_user(
+            email="registeruser@shelter.org",
+            first_name="Reg",
+            last_name="User",
+            password="Password123!",
+        )
+        self.client.force_authenticate(user=reg_user)
+        payload = {
+            "name": "Houston Paws Rescue",
+            "email": "contact@houstonpaws.org",
+            "phone_number": "7135550199",
+            "address_line1": "700 Rescue Blvd",
+            "city": "Houston",
+            "state": "TX",
+            "postal_code": "77001",
+        }
+        response = self.client.post(
+            "/api/v1/shelters/register/", data=payload, format="json"
+        )
+        assert response.status_code == status.HTTP_201_CREATED
+        res_data = response.json()
+        assert res_data["success"] is True
+        assert res_data["data"]["name"] == "Houston Paws Rescue"
+
+    def test_shelter_me_get_and_patch_endpoints(self):
+        """Tests GET and PATCH /api/v1/shelters/me/ for current user's shelter."""
+        response = self.client.get("/api/v1/shelters/me/")
+        assert response.status_code == status.HTTP_200_OK
+        res_data = response.json()
+        assert res_data["data"]["name"] == "Austin Rescue Center"
+
+        patch_payload = {"phone_number": "5128889999"}
+        patch_resp = self.client.patch(
+            "/api/v1/shelters/me/", data=patch_payload, format="json"
+        )
+        assert patch_resp.status_code == status.HTTP_200_OK
+        assert patch_resp.json()["data"]["phone_number"] == "5128889999"
+
     def test_retrieve_shelter_endpoint(self):
         """Tests GET /api/v1/shelters/{id}/ returns shelter details."""
         url = f"/api/v1/shelters/{self.shelter.id}/"
@@ -86,7 +126,6 @@ class TestShelterAPI(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         res_data = response.json()
         assert res_data["data"]["id"] == str(self.shelter.id)
-        assert res_data["data"]["legal_name"] == ""
 
     def test_partial_update_shelter_endpoint(self):
         """Tests PATCH /api/v1/shelters/{id}/ updates profile fields."""

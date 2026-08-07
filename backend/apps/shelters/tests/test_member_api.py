@@ -1,5 +1,5 @@
 """
-API integration tests for Shelter Member REST endpoints.
+API integration tests for Shelter Member and Staff management REST endpoints.
 """
 
 import pytest
@@ -8,7 +8,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from apps.shelters.constants import ShelterMemberRole
-from apps.shelters.models import ShelterMember
+from apps.shelters.models import ShelterMember, ShelterStaff
 from apps.shelters.services import ShelterService
 
 User = get_user_model()
@@ -51,7 +51,7 @@ class TestMemberAPI(APITestCase):
         url_members = f"/api/v1/shelters/{self.shelter.id}/members/"
         payload = {
             "user_id": str(self.staff_user.id),
-            "role": ShelterMemberRole.STAFF,
+            "role": ShelterMemberRole.VETERINARIAN,
         }
         response = self.client.post(url_members, data=payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
@@ -81,3 +81,20 @@ class TestMemberAPI(APITestCase):
         response = self.client.delete(url_detail)
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "Cannot remove the last remaining OWNER" in response.json()["message"]
+
+    def test_transfer_ownership_api(self):
+        """Tests POST /api/v1/shelters/{id}/transfer-ownership/ transfers ownership."""
+        url_transfer = f"/api/v1/shelters/{self.shelter.id}/transfer-ownership/"
+        payload = {"new_owner_user_id": str(self.staff_user.id)}
+        response = self.client.post(url_transfer, data=payload, format="json")
+        assert response.status_code == status.HTTP_200_OK
+
+        res_data = response.json()["data"]
+        assert res_data["former_owner"]["role"] == ShelterMemberRole.MANAGER
+        assert res_data["new_owner"]["role"] == ShelterMemberRole.OWNER
+
+    def test_shelter_staff_model_alias(self):
+        """Tests ShelterStaff model alias references exact same underlying table."""
+        staff_count = ShelterStaff.objects.filter(shelter=self.shelter).count()
+        member_count = ShelterMember.objects.filter(shelter=self.shelter).count()
+        assert staff_count == member_count == 1

@@ -136,6 +136,9 @@ class ShelterCreateSerializer(serializers.ModelSerializer):
         return name
 
 
+ShelterRegisterSerializer = ShelterCreateSerializer
+
+
 class ShelterUpdateSerializer(serializers.ModelSerializer):
     """Request payload serializer for updating shelter profile details."""
 
@@ -212,6 +215,12 @@ class MemberUpdateSerializer(serializers.Serializer):
     """Request payload for updating a member's role."""
 
     role = serializers.ChoiceField(choices=ShelterMemberRole.choices)
+
+
+class OwnershipTransferSerializer(serializers.Serializer):
+    """Request payload for transferring shelter ownership."""
+
+    new_owner_user_id = serializers.UUIDField(required=True)
 
 
 # --- Verification Serializers ---
@@ -352,3 +361,19 @@ class InvitationRevokeSerializer(serializers.Serializer):
     """Request payload for revoking an invitation."""
 
     invitation_id = serializers.UUIDField(required=True)
+
+
+class ShelterDashboardSerializer(serializers.Serializer):
+    """Response serializer for GET /api/v1/shelters/dashboard/."""
+
+    organization_name = serializers.CharField()
+    verification_status = serializers.CharField()
+    total_pets = serializers.IntegerField(default=0)
+    available_pets = serializers.IntegerField(default=0)
+    adopted_pets = serializers.IntegerField(default=0)
+    pending_applications = serializers.IntegerField(default=0)
+    recent_notifications = serializers.ListField(
+        child=serializers.DictField(), default=list
+    )
+    is_verified = serializers.BooleanField(default=False)
+    can_publish_pets = serializers.BooleanField(default=False)

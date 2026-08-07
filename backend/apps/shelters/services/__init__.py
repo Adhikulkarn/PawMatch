@@ -2,6 +2,7 @@
 Service layer exports for the Shelter bounded context.
 """
 
+from apps.shelters.services.dashboard_service import DashboardService
 from apps.shelters.services.invitation_service import InvitationService
 from apps.shelters.services.member_service import MemberService
 from apps.shelters.services.shelter_service import ShelterService
@@ -12,4 +13,5 @@ __all__ = [
     "VerificationService",
     "InvitationService",
     "MemberService",
+    "DashboardService",
 ]

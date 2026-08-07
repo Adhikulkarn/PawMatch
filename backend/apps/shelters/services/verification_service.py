@@ -2,12 +2,14 @@
 Service layer for Shelter verification workflows and document management.
 """
 
+import logging
 import uuid
 from typing import Any, Optional
 
 from django.db import transaction
 from django.utils import timezone
 
+from apps.audit_logs.services.audit_service import AuditService
 from apps.shelters.constants import (
     DocumentStatus,
     ShelterStatus,
@@ -22,6 +24,8 @@ from apps.shelters.validators import (
     validate_document_file_size,
     validate_document_mime_type,
 )
+
+logger = logging.getLogger("shelters.verification")
 
 
 class VerificationService:
@@ -54,17 +58,39 @@ class VerificationService:
             )
 
     @classmethod
+    def _notify_verification_event(
+        cls, verification: ShelterVerification, event_type: str, details: str = ""
+    ) -> None:
+        """Notification hook emitting verification status update notifications to shelter members."""
+        logger.info(
+            f"Notification Dispatch Hook: Shelter Verification [{event_type}] for {verification.shelter.name}",
+            extra={
+                "shelter_id": str(verification.shelter.id),
+                "verification_id": str(verification.id),
+                "event_type": event_type,
+                "details": details,
+            },
+        )
+
+    @classmethod
     def submit_verification(cls, verification_id: uuid.UUID) -> ShelterVerification:
         """Submits a draft or needs_information verification workflow for review."""
-        try:
-            verification = ShelterVerification.objects.get(id=verification_id)
-        except ShelterVerification.DoesNotExist:
-            raise VerificationWorkflowException("Verification request not found.")
+        with transaction.atomic():
+            try:
+                verification = (
+                    ShelterVerification.objects.select_for_update()
+                    .select_related("shelter")
+                    .get(id=verification_id)
+                )
+            except ShelterVerification.DoesNotExist:
+                raise VerificationWorkflowException("Verification request not found.")
 
-        cls._validate_transition(verification, VerificationStatus.SUBMITTED)
-        verification.status = VerificationStatus.SUBMITTED
-        verification.submitted_at = timezone.now()
-        verification.save(update_fields=["status", "submitted_at", "updated_at"])
+            cls._validate_transition(verification, VerificationStatus.SUBMITTED)
+            verification.status = VerificationStatus.SUBMITTED
+            verification.submitted_at = timezone.now()
+            verification.save(update_fields=["status", "submitted_at", "updated_at"])
+
+        cls._notify_verification_event(verification, "SUBMITTED")
         return verification
 
     @classmethod
@@ -72,15 +98,22 @@ class VerificationService:
         cls, verification_id: uuid.UUID, reviewer_user: Any
     ) -> ShelterVerification:
         """Places a submitted verification workflow under review by authorized staff."""
-        try:
-            verification = ShelterVerification.objects.get(id=verification_id)
-        except ShelterVerification.DoesNotExist:
-            raise VerificationWorkflowException("Verification request not found.")
+        with transaction.atomic():
+            try:
+                verification = (
+                    ShelterVerification.objects.select_for_update()
+                    .select_related("shelter")
+                    .get(id=verification_id)
+                )
+            except ShelterVerification.DoesNotExist:
+                raise VerificationWorkflowException("Verification request not found.")
 
-        cls._validate_transition(verification, VerificationStatus.UNDER_REVIEW)
-        verification.status = VerificationStatus.UNDER_REVIEW
-        verification.reviewed_by = reviewer_user
-        verification.save(update_fields=["status", "reviewed_by", "updated_at"])
+            cls._validate_transition(verification, VerificationStatus.UNDER_REVIEW)
+            verification.status = VerificationStatus.UNDER_REVIEW
+            verification.reviewed_by = reviewer_user
+            verification.save(update_fields=["status", "reviewed_by", "updated_at"])
+
+        cls._notify_verification_event(verification, "UNDER_REVIEW")
         return verification
 
     @classmethod
@@ -88,33 +121,61 @@ class VerificationService:
         cls, verification_id: uuid.UUID, reviewer_user: Any, notes: str
     ) -> ShelterVerification:
         """Requests additional information or documents from the shelter."""
-        try:
-            verification = ShelterVerification.objects.get(id=verification_id)
-        except ShelterVerification.DoesNotExist:
-            raise VerificationWorkflowException("Verification request not found.")
+        with transaction.atomic():
+            try:
+                verification = (
+                    ShelterVerification.objects.select_for_update()
+                    .select_related("shelter")
+                    .get(id=verification_id)
+                )
+            except ShelterVerification.DoesNotExist:
+                raise VerificationWorkflowException("Verification request not found.")
 
-        cls._validate_transition(verification, VerificationStatus.NEEDS_INFORMATION)
-        verification.status = VerificationStatus.NEEDS_INFORMATION
-        verification.reviewed_by = reviewer_user
-        verification.reviewer_notes = notes
-        verification.save(
-            update_fields=["status", "reviewed_by", "reviewer_notes", "updated_at"]
+            cls._validate_transition(verification, VerificationStatus.NEEDS_INFORMATION)
+            verification.status = VerificationStatus.NEEDS_INFORMATION
+            verification.reviewed_by = reviewer_user
+            verification.reviewer_notes = notes
+            verification.save(
+                update_fields=["status", "reviewed_by", "reviewer_notes", "updated_at"]
+            )
+
+        AuditService.log_event(
+            action="SHELTER_VERIFICATION_NEEDS_INFO",
+            user_id=getattr(reviewer_user, "id", None),
+            email=getattr(reviewer_user, "email", ""),
+            details={
+                "shelter_id": str(verification.shelter.id),
+                "notes": notes,
+            },
         )
+        cls._notify_verification_event(verification, "NEEDS_INFORMATION", details=notes)
         return verification
 
     @classmethod
     def approve_verification(
         cls, verification_id: uuid.UUID, reviewer_user: Any, notes: str = ""
     ) -> ShelterVerification:
-        """Approves shelter verification workflow and transitions shelter status to VERIFIED."""
-        try:
-            verification = ShelterVerification.objects.get(id=verification_id)
-        except ShelterVerification.DoesNotExist:
-            raise VerificationWorkflowException("Verification request not found.")
+        """
+        Approves shelter verification workflow and transitions shelter status to VERIFIED.
 
-        cls._validate_transition(verification, VerificationStatus.APPROVED)
-
+        Approval requirements:
+        - Updates verification status to APPROVED and records reviewed_at timestamp.
+        - Updates parent shelter operational status to VERIFIED.
+        - Creates security audit log record via AuditService.
+        - Triggers notification hook dispatch for shelter owners.
+        """
         with transaction.atomic():
+            try:
+                verification = (
+                    ShelterVerification.objects.select_for_update()
+                    .select_related("shelter")
+                    .get(id=verification_id)
+                )
+            except ShelterVerification.DoesNotExist:
+                raise VerificationWorkflowException("Verification request not found.")
+
+            cls._validate_transition(verification, VerificationStatus.APPROVED)
+
             verification.status = VerificationStatus.APPROVED
             verification.reviewed_by = reviewer_user
             verification.reviewed_at = timezone.now()
@@ -132,21 +193,44 @@ class VerificationService:
                 status=DocumentStatus.APPROVED, verified_by=reviewer_user
             )
 
+        AuditService.log_event(
+            action="SHELTER_VERIFICATION_APPROVED",
+            user_id=getattr(reviewer_user, "id", None),
+            email=getattr(reviewer_user, "email", ""),
+            details={
+                "shelter_id": str(verification.shelter.id),
+                "notes": notes,
+                "verified_at": verification.reviewed_at.isoformat(),
+            },
+        )
+        cls._notify_verification_event(verification, "APPROVED", details=notes)
         return verification
 
     @classmethod
     def reject_verification(
         cls, verification_id: uuid.UUID, reviewer_user: Any, reason: str
     ) -> ShelterVerification:
-        """Rejects shelter verification workflow and updates shelter status to REJECTED."""
-        try:
-            verification = ShelterVerification.objects.get(id=verification_id)
-        except ShelterVerification.DoesNotExist:
-            raise VerificationWorkflowException("Verification request not found.")
+        """
+        Rejects shelter verification workflow and updates shelter status to UNVERIFIED.
 
-        cls._validate_transition(verification, VerificationStatus.REJECTED)
-
+        Rejection requirements:
+        - Updates verification status to REJECTED and records rejection_reason and reviewed_at.
+        - Updates parent shelter operational status to UNVERIFIED.
+        - Creates security audit log record via AuditService.
+        - Triggers notification hook dispatch for shelter owners.
+        """
         with transaction.atomic():
+            try:
+                verification = (
+                    ShelterVerification.objects.select_for_update()
+                    .select_related("shelter")
+                    .get(id=verification_id)
+                )
+            except ShelterVerification.DoesNotExist:
+                raise VerificationWorkflowException("Verification request not found.")
+
+            cls._validate_transition(verification, VerificationStatus.REJECTED)
+
             verification.status = VerificationStatus.REJECTED
             verification.reviewed_by = reviewer_user
             verification.reviewed_at = timezone.now()
@@ -158,6 +242,17 @@ class VerificationService:
             shelter.status = ShelterStatus.UNVERIFIED
             shelter.save(update_fields=["status", "updated_at"])
 
+        AuditService.log_event(
+            action="SHELTER_VERIFICATION_REJECTED",
+            user_id=getattr(reviewer_user, "id", None),
+            email=getattr(reviewer_user, "email", ""),
+            details={
+                "shelter_id": str(verification.shelter.id),
+                "reason": reason,
+                "reviewed_at": verification.reviewed_at.isoformat(),
+            },
+        )
+        cls._notify_verification_event(verification, "REJECTED", details=reason)
         return verification
 
     # --- Document Workflow Methods ---

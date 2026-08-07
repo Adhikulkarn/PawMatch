@@ -16,7 +16,10 @@ from apps.shelters.selectors.member_selector import (
 from apps.shelters.selectors.shelter_selector import (
     get_shelter_by_id,
     get_shelter_by_slug,
+    get_shelters_by_status,
+    list_all_shelters,
     list_verified_shelters,
+    search_shelters,
 )
 from apps.shelters.selectors.verification_selector import (
     get_active_verification,
@@ -29,6 +32,9 @@ __all__ = [
     "get_shelter_by_id",
     "get_shelter_by_slug",
     "list_verified_shelters",
+    "list_all_shelters",
+    "get_shelters_by_status",
+    "search_shelters",
     # Member Selectors
     "get_shelter_members",
     "get_user_shelter_membership",
