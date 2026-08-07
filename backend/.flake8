@@ -9,3 +9,8 @@ exclude =
     migrations,
     build,
     dist
+
+per-file-ignores =
+    config/settings/development.py: F403, F405
+    config/settings/staging.py: F403, F405
+    config/settings/production.py: F403, F405

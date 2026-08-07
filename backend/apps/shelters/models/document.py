@@ -8,6 +8,7 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.core.mixins import TimestampedModel, UUIDModel
 from apps.shelters.constants import DocumentStatus, DocumentType
+from apps.shelters.managers import ShelterDocumentManager
 from apps.shelters.validators import (
     validate_document_file_size,
     validate_document_mime_type,
@@ -91,6 +92,8 @@ class ShelterDocument(UUIDModel, TimestampedModel):
         related_name="verified_documents",
         verbose_name=_("verified by staff user"),
     )
+
+    objects = ShelterDocumentManager()
 
     class Meta:
         verbose_name = _("shelter document")

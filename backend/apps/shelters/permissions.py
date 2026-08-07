@@ -482,3 +482,46 @@ class CanRevokeInvitation(BasePermission):
             return False
         member = get_active_member(request.user, shelter)
         return member is not None and member.is_manager
+
+
+class IsVerifiedShelter(BasePermission):
+    """
+    Permission class verifying that a shelter is VERIFIED (can_publish_pets is True).
+    Required for:
+    - Creating pets
+    - Editing pets
+    - Approving adoptions
+    - Uploading pet images
+
+    Business Rule BR-202: Unverified / Draft / Pending shelters cannot execute verified operations.
+    Bypass: System Administrators.
+    """
+
+    def has_permission(self, request, view) -> bool:
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if is_system_administrator(request.user):
+            return True
+        pk = view.kwargs.get("pk") or view.kwargs.get("shelter_pk")
+        if pk:
+            shelter_id = _to_uuid(pk)
+            if shelter_id:
+                shelter = Shelter.objects.filter(
+                    id=shelter_id, is_deleted=False
+                ).first()
+                if shelter:
+                    return self.has_object_permission(request, view, shelter)
+        return True
+
+    def has_object_permission(self, request, view, obj: Any) -> bool:
+        if not request.user or not request.user.is_authenticated:
+            return False
+        if is_system_administrator(request.user):
+            return True
+        shelter = get_shelter_from_object(obj)
+        if not shelter:
+            return False
+        member = get_active_member(request.user, shelter)
+        if not member:
+            return False
+        return shelter.can_publish_pets

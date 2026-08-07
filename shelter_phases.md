@@ -12,7 +12,7 @@ Phase 2 — Shelter Management
    • Selectors
    • Business Rules
 
-🎯 Sprint 2.4
+✅ Sprint 2.4
    REST APIs & DRF Integration
    • Serializers
    • ViewSets / API Views
@@ -24,15 +24,15 @@ Phase 2 — Shelter Management
    • Filtering
    • Searching
    • Ordering
-git 
-Sprint 2.5
+
+✅ Sprint 2.5
    Permissions & Authorization
    • RBAC Integration
    • Object-Level Permissions
    • Ownership Checks
    • API Authorization
 
-Sprint 2.6
+✅ Sprint 2.6
    Testing & Integration
    • API Tests
    • Permission Tests
@@ -40,7 +40,7 @@ Sprint 2.6
    • End-to-End Workflow Tests
    • Performance Validation
 
-Sprint 2.7
+✅ Sprint 2.7
    Documentation & Phase Sign-off
    • ADR Updates
    • API Documentation

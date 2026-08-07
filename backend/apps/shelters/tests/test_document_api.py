@@ -1,5 +1,5 @@
 """
-API integration tests for Shelter Document attachment and deletion endpoints.
+API integration tests for Shelter Document attachment, listing, and deletion endpoints.
 """
 
 import pytest
@@ -54,7 +54,7 @@ class TestDocumentAPI(APITestCase):
         assert doc_data["document_type"] == DocumentType.GOVERNMENT_LICENSE
         doc_id = doc_data["id"]
 
-        # List documents
+        # List documents via sub-resource
         resp_list = self.client.get(url_attach)
         assert resp_list.status_code == status.HTTP_200_OK
         assert len(resp_list.json()["data"]) == 1
@@ -64,6 +64,27 @@ class TestDocumentAPI(APITestCase):
         resp_del = self.client.delete(url_delete)
         assert resp_del.status_code == status.HTTP_200_OK
         assert ShelterDocument.objects.filter(id=doc_id).exists() is False
+
+    def test_top_level_upload_and_list_documents_api(self):
+        """Tests POST /api/v1/shelters/upload-document/ and GET /api/v1/shelters/documents/."""
+        pdf_file = SimpleUploadedFile(
+            "ngo_cert.pdf", b"ngo pdf content", content_type="application/pdf"
+        )
+        payload = {
+            "document_type": DocumentType.NGO_CERTIFICATE,
+            "file": pdf_file,
+        }
+        resp_upload = self.client.post(
+            "/api/v1/shelters/upload-document/", data=payload, format="multipart"
+        )
+        assert resp_upload.status_code == status.HTTP_201_CREATED
+        assert (
+            resp_upload.json()["data"]["document_type"] == DocumentType.NGO_CERTIFICATE
+        )
+
+        resp_list = self.client.get("/api/v1/shelters/documents/")
+        assert resp_list.status_code == status.HTTP_200_OK
+        assert len(resp_list.json()["data"]) >= 1
 
     def test_delete_approved_document_api_fails(self):
         """Tests DELETE /api/v1/shelters/documents/{id}/ fails for approved document (BR-207)."""

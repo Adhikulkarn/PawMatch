@@ -483,3 +483,42 @@ class TestShelterPermissions(APITestCase):
         )
         assert resp.status_code == status.HTTP_200_OK
         assert resp.json()["data"]["role"] == ShelterMemberRole.OWNER
+
+    # --- Part 6.12: Verified Shelter Operational Permissions ---
+
+    def test_verified_shelter_permissions_and_draft_restrictions(self):
+        """
+        Tests IsVerifiedShelter permission enforcement:
+        - Draft/Unverified shelter members cannot execute verified operations (pets, adoptions).
+        - Verified shelter members can execute verified operations.
+        - System Administrators bypass operational state checks.
+        """
+        from apps.shelters.permissions import IsVerifiedShelter
+
+        perm = IsVerifiedShelter()
+
+        class DummyRequest:
+            def __init__(self, user):
+                self.user = user
+
+        class DummyView:
+            kwargs = {}
+
+        # 1. Unverified shelter: owner is denied verified actions
+        req_owner = DummyRequest(self.owner1)
+        assert (
+            perm.has_object_permission(req_owner, DummyView(), self.shelter1) is False
+        )
+
+        # 2. Verified shelter: owner is granted verified actions
+        self.shelter1.status = ShelterStatus.VERIFIED
+        self.shelter1.save()
+
+        assert perm.has_object_permission(req_owner, DummyView(), self.shelter1) is True
+
+        # 3. Administrator bypass: admin is granted verified actions even on unverified shelter
+        self.shelter1.status = ShelterStatus.UNVERIFIED
+        self.shelter1.save()
+
+        req_admin = DummyRequest(self.admin_user)
+        assert perm.has_object_permission(req_admin, DummyView(), self.shelter1) is True

@@ -7,11 +7,43 @@ from django.utils.translation import gettext_lazy as _
 
 from apps.shelters.models import (
     Shelter,
+    ShelterAddress,
     ShelterDocument,
     ShelterInvitation,
     ShelterMember,
     ShelterVerification,
 )
+
+
+@admin.register(ShelterAddress)
+class ShelterAddressAdmin(admin.ModelAdmin):
+    """Admin configuration for ShelterAddress locations."""
+
+    list_display = (
+        "shelter",
+        "city",
+        "state",
+        "postal_code",
+        "country",
+        "is_primary",
+    )
+    list_filter = (
+        "state",
+        "country",
+        "is_primary",
+    )
+    search_fields = (
+        "shelter__name",
+        "address_line1",
+        "city",
+        "state",
+        "postal_code",
+    )
+    readonly_fields = (
+        "id",
+        "created_at",
+        "updated_at",
+    )
 
 
 @admin.register(Shelter)
@@ -21,6 +53,7 @@ class ShelterAdmin(admin.ModelAdmin):
     list_display = (
         "name",
         "slug",
+        "organization_type",
         "city",
         "state",
         "status",
@@ -29,6 +62,7 @@ class ShelterAdmin(admin.ModelAdmin):
     )
     list_filter = (
         "status",
+        "organization_type",
         "is_active",
         "is_deleted",
         "state",
@@ -60,6 +94,7 @@ class ShelterAdmin(admin.ModelAdmin):
                     "name",
                     "slug",
                     "legal_name",
+                    "organization_type",
                     "registration_number",
                     "tax_id",
                 )

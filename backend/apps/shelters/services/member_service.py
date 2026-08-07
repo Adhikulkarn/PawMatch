@@ -53,24 +53,32 @@ class MemberService:
         Business Rules:
         - BR-203: A shelter must always have at least one OWNER.
                   Prevents removing the last remaining OWNER of a shelter.
+        - Uses atomic transaction and row-level locking to prevent race conditions.
         """
-        try:
-            member = ShelterMember.objects.get(id=shelter_member_id)
-        except ShelterMember.DoesNotExist:
-            raise ShelterDomainException("Shelter member not found.")
-
-        if member.role == ShelterMemberRole.OWNER and member.is_active:
-            active_owners_count = ShelterMember.objects.filter(
-                shelter=member.shelter,
-                role=ShelterMemberRole.OWNER,
-                is_active=True,
-            ).count()
-            if active_owners_count <= 1:
-                raise LastOwnerRemovalException(
-                    "Cannot remove the last remaining OWNER of a shelter (BR-203)."
+        with transaction.atomic():
+            try:
+                member = ShelterMember.objects.select_for_update().get(
+                    id=shelter_member_id
                 )
+            except ShelterMember.DoesNotExist:
+                raise ShelterDomainException("Shelter member not found.")
 
-        member.delete()
+            if member.role == ShelterMemberRole.OWNER and member.is_active:
+                active_owners_count = (
+                    ShelterMember.objects.select_for_update()
+                    .filter(
+                        shelter=member.shelter,
+                        role=ShelterMemberRole.OWNER,
+                        is_active=True,
+                    )
+                    .count()
+                )
+                if active_owners_count <= 1:
+                    raise LastOwnerRemovalException(
+                        "Cannot remove the last remaining OWNER of a shelter (BR-203)."
+                    )
+
+            member.delete()
 
     @classmethod
     def change_role(cls, shelter_member_id: uuid.UUID, new_role: str) -> ShelterMember:
@@ -79,30 +87,38 @@ class MemberService:
 
         Business Rules:
         - BR-203: Prevents downgrading the last remaining OWNER of a shelter.
+        - Uses atomic transaction and row-level locking to prevent race conditions.
         """
-        try:
-            member = ShelterMember.objects.get(id=shelter_member_id)
-        except ShelterMember.DoesNotExist:
-            raise ShelterDomainException("Shelter member not found.")
-
-        if (
-            member.role == ShelterMemberRole.OWNER
-            and new_role != ShelterMemberRole.OWNER
-            and member.is_active
-        ):
-            active_owners_count = ShelterMember.objects.filter(
-                shelter=member.shelter,
-                role=ShelterMemberRole.OWNER,
-                is_active=True,
-            ).count()
-            if active_owners_count <= 1:
-                raise LastOwnerRemovalException(
-                    "Cannot demote the last remaining OWNER of a shelter (BR-203)."
+        with transaction.atomic():
+            try:
+                member = ShelterMember.objects.select_for_update().get(
+                    id=shelter_member_id
                 )
+            except ShelterMember.DoesNotExist:
+                raise ShelterDomainException("Shelter member not found.")
 
-        member.role = new_role
-        member.save(update_fields=["role", "updated_at"])
-        return member
+            if (
+                member.role == ShelterMemberRole.OWNER
+                and new_role != ShelterMemberRole.OWNER
+                and member.is_active
+            ):
+                active_owners_count = (
+                    ShelterMember.objects.select_for_update()
+                    .filter(
+                        shelter=member.shelter,
+                        role=ShelterMemberRole.OWNER,
+                        is_active=True,
+                    )
+                    .count()
+                )
+                if active_owners_count <= 1:
+                    raise LastOwnerRemovalException(
+                        "Cannot demote the last remaining OWNER of a shelter (BR-203)."
+                    )
+
+            member.role = new_role
+            member.save(update_fields=["role", "updated_at"])
+            return member
 
     @classmethod
     def transfer_ownership(

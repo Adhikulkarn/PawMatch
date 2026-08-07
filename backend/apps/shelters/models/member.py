@@ -76,3 +76,6 @@ class ShelterMember(UUIDModel, TimestampedModel):
     def is_manager(self) -> bool:
         """Returns True if member has OWNER or MANAGER role."""
         return self.role in [ShelterMemberRole.OWNER, ShelterMemberRole.MANAGER]
+
+
+ShelterStaff = ShelterMember

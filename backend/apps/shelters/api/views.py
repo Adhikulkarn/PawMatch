@@ -9,10 +9,10 @@ from typing import Any
 from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema, extend_schema_view
-from rest_framework import filters, status, viewsets
+from rest_framework import filters, status, views, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound, ValidationError
-from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
+from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -26,18 +26,22 @@ from apps.shelters.api.serializers import (
     InvitationRevokeSerializer,
     MemberAddSerializer,
     MemberUpdateSerializer,
+    OwnershipTransferSerializer,
     ShelterCreateSerializer,
+    ShelterDashboardSerializer,
     ShelterDetailSerializer,
     ShelterDocumentSerializer,
     ShelterInvitationSerializer,
     ShelterListSerializer,
     ShelterMemberSerializer,
+    ShelterRegisterSerializer,
     ShelterUpdateSerializer,
     ShelterVerificationSerializer,
     VerificationApproveSerializer,
     VerificationRejectSerializer,
     VerificationRequestInfoSerializer,
 )
+from apps.shelters.constants import VerificationStatus
 from apps.shelters.exceptions import (
     DocumentProtectedException,
     InvitationExpiredException,
@@ -47,7 +51,7 @@ from apps.shelters.exceptions import (
     ShelterNotFoundException,
     VerificationWorkflowException,
 )
-from apps.shelters.models import Shelter
+from apps.shelters.models import Shelter, ShelterVerification
 from apps.shelters.permissions import (
     CanDeleteDocument,
     CanInviteMembers,
@@ -55,6 +59,7 @@ from apps.shelters.permissions import (
     CanManageShelter,
     CanReviewVerification,
     CanRevokeInvitation,
+    CanTransferOwnership,
     CanViewShelter,
     IsShelterManager,
     IsShelterMember,
@@ -64,10 +69,12 @@ from apps.shelters.selectors import (
     get_active_verification,
     get_shelter_by_id,
     get_shelter_members,
+    get_user_shelter_membership,
     list_shelter_documents,
     list_shelter_invitations,
 )
 from apps.shelters.services import (
+    DashboardService,
     InvitationService,
     MemberService,
     ShelterService,
@@ -114,6 +121,178 @@ def handle_domain_exceptions(func):
             )
 
     return wrapper
+
+
+# --- Dedicated Top-Level Resource API Views ---
+
+
+@extend_schema(
+    summary="Register Shelter",
+    description="Registers and onboards a new shelter organization for the authenticated user.",
+    request=ShelterRegisterSerializer,
+    responses={201: ShelterDetailSerializer},
+)
+class ShelterRegisterAPIView(views.APIView):
+    """API view for registering a new shelter organization."""
+
+    permission_classes = [IsAuthenticated]
+
+    @handle_domain_exceptions
+    def post(self, request: Request) -> Response:
+        serializer = ShelterRegisterSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        shelter = ShelterService.create_shelter(
+            user=request.user,
+            **serializer.validated_data,
+        )
+        return api_response(
+            success=True,
+            message="Shelter registered successfully.",
+            data=ShelterDetailSerializer(shelter).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema_view(
+    get=extend_schema(
+        summary="Get Current Shelter Profile",
+        description="Retrieves current authenticated user's shelter organization profile.",
+        responses={200: ShelterDetailSerializer, 404: None},
+    ),
+    patch=extend_schema(
+        summary="Update Current Shelter Profile",
+        description="Updates profile details of current authenticated user's shelter.",
+        request=ShelterUpdateSerializer,
+        responses={200: ShelterDetailSerializer},
+    ),
+)
+class ShelterMeAPIView(views.APIView):
+    """API view for inspecting and updating the current user's shelter organization."""
+
+    permission_classes = [IsAuthenticated]
+
+    def _get_user_shelter(self, user: Any) -> Shelter:
+        membership = get_user_shelter_membership(user)
+        if not membership or not membership.shelter or membership.shelter.is_deleted:
+            raise ShelterNotFoundException(
+                "User is not associated with any active shelter."
+            )
+        return membership.shelter
+
+    @handle_domain_exceptions
+    def get(self, request: Request) -> Response:
+        shelter = self._get_user_shelter(request.user)
+        return api_response(data=ShelterDetailSerializer(shelter).data)
+
+    @handle_domain_exceptions
+    def patch(self, request: Request) -> Response:
+        shelter = self._get_user_shelter(request.user)
+        perm = CanManageShelter()
+        if not perm.has_object_permission(request, self, shelter):
+            return api_response(
+                success=False,
+                message="You do not have permission to manage this shelter.",
+                status_code=status.HTTP_403_FORBIDDEN,
+            )
+
+        serializer = ShelterUpdateSerializer(data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        updated_shelter = ShelterService.update_shelter(
+            shelter.id, **serializer.validated_data
+        )
+        return api_response(
+            message="Shelter profile updated successfully.",
+            data=ShelterDetailSerializer(updated_shelter).data,
+        )
+
+
+@extend_schema(
+    summary="Upload Shelter Document",
+    description="Uploads and attaches a verification document to current user's shelter.",
+    request=DocumentAttachSerializer,
+    responses={201: ShelterDocumentSerializer},
+)
+class ShelterUploadDocumentAPIView(views.APIView):
+    """API view for uploading verification documents to current user's shelter."""
+
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    @handle_domain_exceptions
+    def post(self, request: Request) -> Response:
+        membership = get_user_shelter_membership(request.user)
+        if not membership or not membership.shelter or membership.shelter.is_deleted:
+            raise ShelterNotFoundException(
+                "User is not associated with any active shelter."
+            )
+
+        serializer = DocumentAttachSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        verification = get_active_verification(membership.shelter.id)
+        document = VerificationService.attach_document(
+            shelter=membership.shelter,
+            document_type=serializer.validated_data["document_type"],
+            file=serializer.validated_data["file"],
+            uploaded_by=request.user,
+            verification=verification,
+        )
+        return api_response(
+            success=True,
+            message="Document uploaded successfully.",
+            data=ShelterDocumentSerializer(document).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+
+@extend_schema(
+    summary="List Current Shelter Documents",
+    description="Returns uploaded verification documents for current user's shelter.",
+    responses={200: ShelterDocumentSerializer(many=True)},
+)
+class ShelterDocumentListAPIView(views.APIView):
+    """API view for listing documents of current user's shelter."""
+
+    permission_classes = [IsAuthenticated]
+
+    @handle_domain_exceptions
+    def get(self, request: Request) -> Response:
+        membership = get_user_shelter_membership(request.user)
+        if not membership or not membership.shelter or membership.shelter.is_deleted:
+            raise ShelterNotFoundException(
+                "User is not associated with any active shelter."
+            )
+
+        documents = list_shelter_documents(membership.shelter.id)
+        serializer = ShelterDocumentSerializer(documents, many=True)
+        return api_response(data=serializer.data)
+
+
+@extend_schema(
+    summary="Get Shelter Dashboard Summary",
+    description="Retrieves shelter dashboard metrics and summary for the authenticated user's shelter.",
+    responses={200: ShelterDashboardSerializer, 404: None},
+)
+class ShelterDashboardAPIView(views.APIView):
+    """API view for retrieving shelter dashboard overview (GET /api/v1/shelters/dashboard/)."""
+
+    permission_classes = [IsAuthenticated]
+
+    @handle_domain_exceptions
+    def get(self, request: Request) -> Response:
+        membership = get_user_shelter_membership(request.user)
+        if not membership or not membership.shelter or membership.shelter.is_deleted:
+            raise ShelterNotFoundException(
+                "User is not associated with any active shelter."
+            )
+
+        dashboard_data = DashboardService.get_shelter_dashboard(membership.shelter)
+        return api_response(data=ShelterDashboardSerializer(dashboard_data).data)
+
+
+# --- ViewSet & Standalone Views ---
 
 
 @extend_schema_view(
@@ -184,6 +363,8 @@ class ShelterViewSet(viewsets.GenericViewSet):
             if self.request and self.request.method.upper() == "POST":
                 return [IsAuthenticated(), CanInviteMembers()]
             return [IsAuthenticated(), IsShelterManager()]
+        if self.action == "transfer_ownership":
+            return [IsAuthenticated(), CanTransferOwnership()]
         return [IsAuthenticated()]
 
     def get_serializer_class(self):
@@ -571,6 +752,43 @@ class ShelterViewSet(viewsets.GenericViewSet):
             status_code=status.HTTP_201_CREATED,
         )
 
+    @extend_schema(
+        summary="Transfer Shelter Ownership",
+        description="Transfers primary shelter ownership from current owner to a target user.",
+        request=OwnershipTransferSerializer,
+        responses={200: ShelterMemberSerializer(many=True)},
+    )
+    @action(detail=True, methods=["post"], url_path="transfer-ownership")
+    @handle_domain_exceptions
+    def transfer_ownership(self, request: Request, pk: str = None) -> Response:
+        serializer = OwnershipTransferSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        shelter_id = _parse_uuid(pk)
+        shelter = get_shelter_by_id(shelter_id)
+        if not shelter:
+            raise NotFound("Shelter not found.")
+
+        try:
+            target_user = User.objects.get(
+                id=serializer.validated_data["new_owner_user_id"]
+            )
+        except User.DoesNotExist:
+            raise ValidationError({"new_owner_user_id": "Target user not found."})
+
+        former_owner, new_owner = MemberService.transfer_ownership(
+            shelter=shelter,
+            current_owner_user=request.user,
+            new_owner_user=target_user,
+        )
+        return api_response(
+            message="Ownership transferred successfully.",
+            data={
+                "former_owner": ShelterMemberSerializer(former_owner).data,
+                "new_owner": ShelterMemberSerializer(new_owner).data,
+            },
+        )
+
 
 # --- Standalone Resource Views ---
 
@@ -680,4 +898,111 @@ class InvitationStandaloneViewSet(viewsets.ViewSet):
         return api_response(
             message="Invitation revoked successfully.",
             data=ShelterInvitationSerializer(invitation).data,
+        )
+
+
+# --- Administrator Verification Management Views ---
+
+
+@extend_schema_view(
+    pending=extend_schema(
+        summary="List Pending Shelter Verifications",
+        description="Returns pending shelter verifications (SUBMITTED, UNDER_REVIEW) for staff review.",
+        responses={200: ShelterVerificationSerializer(many=True)},
+    ),
+    retrieve=extend_schema(
+        summary="Retrieve Shelter Verification Details",
+        description="Retrieves shelter verification request details for staff review.",
+        responses={200: ShelterVerificationSerializer},
+    ),
+    approve=extend_schema(
+        summary="Approve Shelter Verification",
+        description="Approves shelter verification request.",
+        request=VerificationApproveSerializer,
+        responses={200: ShelterVerificationSerializer},
+    ),
+    reject=extend_schema(
+        summary="Reject Shelter Verification",
+        description="Rejects shelter verification request with reason.",
+        request=VerificationRejectSerializer,
+        responses={200: ShelterVerificationSerializer},
+    ),
+    request_information=extend_schema(
+        summary="Request Information for Verification",
+        description="Requests additional details for verification review.",
+        request=VerificationRequestInfoSerializer,
+        responses={200: ShelterVerificationSerializer},
+    ),
+)
+class AdminVerificationViewSet(viewsets.ViewSet):
+    """Administrator ViewSet for inspecting and acting on shelter verifications."""
+
+    permission_classes = [IsAuthenticated, CanReviewVerification]
+
+    @handle_domain_exceptions
+    def pending(self, request: Request) -> Response:
+        verifications = ShelterVerification.objects.filter(
+            status__in=[
+                VerificationStatus.SUBMITTED,
+                VerificationStatus.UNDER_REVIEW,
+            ]
+        ).order_by("-submitted_at")
+        serializer = ShelterVerificationSerializer(verifications, many=True)
+        return api_response(data=serializer.data)
+
+    @handle_domain_exceptions
+    def retrieve(self, request: Request, pk: str = None) -> Response:
+        v_id = _parse_uuid(pk)
+        try:
+            verification = ShelterVerification.objects.get(id=v_id)
+        except ShelterVerification.DoesNotExist:
+            raise NotFound("Verification request not found.")
+        return api_response(data=ShelterVerificationSerializer(verification).data)
+
+    @handle_domain_exceptions
+    def approve(self, request: Request, pk: str = None) -> Response:
+        v_id = _parse_uuid(pk)
+        serializer = VerificationApproveSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        updated = VerificationService.approve_verification(
+            v_id,
+            reviewer_user=request.user,
+            notes=serializer.validated_data.get("notes", ""),
+        )
+        return api_response(
+            message="Shelter verification approved successfully.",
+            data=ShelterVerificationSerializer(updated).data,
+        )
+
+    @handle_domain_exceptions
+    def reject(self, request: Request, pk: str = None) -> Response:
+        v_id = _parse_uuid(pk)
+        serializer = VerificationRejectSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        updated = VerificationService.reject_verification(
+            v_id,
+            reviewer_user=request.user,
+            reason=serializer.validated_data["reason"],
+        )
+        return api_response(
+            message="Shelter verification rejected.",
+            data=ShelterVerificationSerializer(updated).data,
+        )
+
+    @handle_domain_exceptions
+    def request_information(self, request: Request, pk: str = None) -> Response:
+        v_id = _parse_uuid(pk)
+        serializer = VerificationRequestInfoSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        updated = VerificationService.request_information(
+            v_id,
+            reviewer_user=request.user,
+            notes=serializer.validated_data["notes"],
+        )
+        return api_response(
+            message="Additional information requested successfully.",
+            data=ShelterVerificationSerializer(updated).data,
         )

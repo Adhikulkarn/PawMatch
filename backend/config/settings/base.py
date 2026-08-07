@@ -3,6 +3,7 @@ Base Django settings for PawMatch project.
 """
 
 import os
+import sys
 from datetime import timedelta
 from pathlib import Path
 
@@ -109,7 +110,6 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # Database Configuration
-import sys
 
 IS_TESTING = "test" in sys.argv or any("pytest" in arg for arg in sys.argv)
 
