@@ -109,15 +109,22 @@ WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
 # Database Configuration
-# Fallback to SQLite if DATABASE_URL is not set or empty
-DEFAULT_DB_URL = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
-DATABASES = {"default": env.db("DATABASE_URL", default=DEFAULT_DB_URL)}
-
-# Cache Configuration (Redis with LocalMemCache fallback)
 import sys
 
 IS_TESTING = "test" in sys.argv or any("pytest" in arg for arg in sys.argv)
 
+if IS_TESTING:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+else:
+    DEFAULT_DB_URL = f"sqlite:///{BASE_DIR / 'db.sqlite3'}"
+    DATABASES = {"default": env.db("DATABASE_URL", default=DEFAULT_DB_URL)}
+
+# Cache Configuration (Redis with LocalMemCache fallback)
 REDIS_URL = env.str("REDIS_URL", default="")
 if REDIS_URL and not IS_TESTING:
     CACHES = {

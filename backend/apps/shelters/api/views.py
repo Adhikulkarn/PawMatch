@@ -77,11 +77,22 @@ from apps.shelters.services import (
 User = get_user_model()
 
 
+<<<<<<< HEAD
 def _to_uuid(val: Any) -> uuid.UUID:
     """Helper converting string or UUID instance cleanly to a uuid.UUID object."""
     if isinstance(val, uuid.UUID):
         return val
     return uuid.UUID(str(val))
+=======
+def _parse_uuid(val) -> uuid.UUID:
+    """Safely convert a string or UUID object to a UUID instance."""
+    if isinstance(val, uuid.UUID):
+        return val
+    try:
+        return uuid.UUID(str(val))
+    except (ValueError, TypeError, AttributeError):
+        raise NotFound("Invalid UUID format.")
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
 
 
 def handle_domain_exceptions(func):
@@ -222,8 +233,13 @@ class ShelterViewSet(viewsets.GenericViewSet):
     @handle_domain_exceptions
     def retrieve(self, request: Request, pk: str = None) -> Response:
         try:
+<<<<<<< HEAD
             shelter_id = _to_uuid(pk)
         except ValueError:
+=======
+            shelter_id = _parse_uuid(pk)
+        except NotFound:
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
             raise NotFound("Invalid shelter UUID.")
 
         shelter = get_shelter_by_id(shelter_id)
@@ -235,8 +251,13 @@ class ShelterViewSet(viewsets.GenericViewSet):
     @handle_domain_exceptions
     def partial_update(self, request: Request, pk: str = None) -> Response:
         try:
+<<<<<<< HEAD
             shelter_id = _to_uuid(pk)
         except ValueError:
+=======
+            shelter_id = _parse_uuid(pk)
+        except NotFound:
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
             raise NotFound("Invalid shelter UUID.")
 
         serializer = ShelterUpdateSerializer(data=request.data, partial=True)
@@ -261,7 +282,11 @@ class ShelterViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=["post"], url_path="verification/submit")
     @handle_domain_exceptions
     def submit_verification(self, request: Request, pk: str = None) -> Response:
+<<<<<<< HEAD
         shelter_id = _to_uuid(pk)
+=======
+        shelter_id = _parse_uuid(pk)
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
         verification = get_active_verification(shelter_id)
         if not verification:
             return api_response(
@@ -285,7 +310,11 @@ class ShelterViewSet(viewsets.GenericViewSet):
     @action(detail=True, methods=["post"], url_path="verification/start-review")
     @handle_domain_exceptions
     def start_review(self, request: Request, pk: str = None) -> Response:
+<<<<<<< HEAD
         shelter_id = _to_uuid(pk)
+=======
+        shelter_id = _parse_uuid(pk)
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
         verification = get_active_verification(shelter_id)
         if not verification:
             return api_response(
@@ -314,7 +343,11 @@ class ShelterViewSet(viewsets.GenericViewSet):
         serializer = VerificationRequestInfoSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+<<<<<<< HEAD
         shelter_id = _to_uuid(pk)
+=======
+        shelter_id = _parse_uuid(pk)
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
         verification = get_active_verification(shelter_id)
         if not verification:
             return api_response(
@@ -345,7 +378,11 @@ class ShelterViewSet(viewsets.GenericViewSet):
         serializer = VerificationApproveSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+<<<<<<< HEAD
         shelter_id = _to_uuid(pk)
+=======
+        shelter_id = _parse_uuid(pk)
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
         verification = get_active_verification(shelter_id)
         if not verification:
             return api_response(
@@ -376,7 +413,11 @@ class ShelterViewSet(viewsets.GenericViewSet):
         serializer = VerificationRejectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+<<<<<<< HEAD
         shelter_id = _to_uuid(pk)
+=======
+        shelter_id = _parse_uuid(pk)
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
         verification = get_active_verification(shelter_id)
         if not verification:
             return api_response(
@@ -398,12 +439,26 @@ class ShelterViewSet(viewsets.GenericViewSet):
     # --- Document Sub-Resource Actions ---
 
     @extend_schema(
+<<<<<<< HEAD
         summary="Manage Shelter Documents",
         description="List or attach verification documents to a shelter.",
         responses={
             200: ShelterDocumentSerializer(many=True),
             201: ShelterDocumentSerializer,
         },
+=======
+        methods=["get"],
+        summary="List Shelter Documents",
+        description="Returns uploaded verification documents for a shelter.",
+        responses={200: ShelterDocumentSerializer(many=True)},
+    )
+    @extend_schema(
+        methods=["post"],
+        summary="Attach Shelter Document",
+        description="Uploads and attaches a verification document to a shelter.",
+        request=DocumentAttachSerializer,
+        responses={201: ShelterDocumentSerializer},
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
     )
     @action(
         detail=True,
@@ -413,11 +468,32 @@ class ShelterViewSet(viewsets.GenericViewSet):
     )
     @handle_domain_exceptions
     def documents(self, request: Request, pk: str = None) -> Response:
+<<<<<<< HEAD
         shelter_id = _to_uuid(pk)
 
         if request.method.lower() == "post":
             serializer = DocumentAttachSerializer(data=request.data)
             serializer.is_valid(raise_exception=True)
+=======
+        if request.method == "POST":
+            return self.attach_document(request, pk)
+        return self.list_documents(request, pk)
+
+    def list_documents(self, request: Request, pk: str = None) -> Response:
+        shelter_id = _parse_uuid(pk)
+        documents = list_shelter_documents(shelter_id)
+        serializer = ShelterDocumentSerializer(documents, many=True)
+        return api_response(data=serializer.data)
+
+    def attach_document(self, request: Request, pk: str = None) -> Response:
+        serializer = DocumentAttachSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        shelter_id = _parse_uuid(pk)
+        shelter = get_shelter_by_id(shelter_id)
+        if not shelter:
+            raise NotFound("Shelter not found.")
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
 
             shelter = get_shelter_by_id(shelter_id)
             if not shelter:
@@ -446,6 +522,7 @@ class ShelterViewSet(viewsets.GenericViewSet):
     # --- Member Sub-Resource Actions ---
 
     @extend_schema(
+<<<<<<< HEAD
         summary="Manage Shelter Members",
         description="List or add members for a shelter.",
         responses={
@@ -485,6 +562,30 @@ class ShelterViewSet(viewsets.GenericViewSet):
 
         # GET request
         mem_qs = get_shelter_members(shelter_id)
+=======
+        methods=["get"],
+        summary="List Shelter Members",
+        description="Returns member associations for a shelter.",
+        responses={200: ShelterMemberSerializer(many=True)},
+    )
+    @extend_schema(
+        methods=["post"],
+        summary="Add Shelter Member",
+        description="Adds a user as a member of a shelter organization.",
+        request=MemberAddSerializer,
+        responses={201: ShelterMemberSerializer},
+    )
+    @action(detail=True, methods=["get", "post"], url_path="members")
+    @handle_domain_exceptions
+    def members(self, request: Request, pk: str = None) -> Response:
+        if request.method == "POST":
+            return self.add_member(request, pk)
+        return self.list_members(request, pk)
+
+    def list_members(self, request: Request, pk: str = None) -> Response:
+        shelter_id = _parse_uuid(pk)
+        members = get_shelter_members(shelter_id)
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
         role = request.query_params.get("role")
         if role:
             mem_qs = mem_qs.filter(role=role)
@@ -495,6 +596,7 @@ class ShelterViewSet(viewsets.GenericViewSet):
         serializer = ShelterMemberSerializer(mem_qs, many=True)
         return api_response(data=serializer.data)
 
+<<<<<<< HEAD
     # --- Invitation Sub-Resource Actions ---
 
     @extend_schema(
@@ -534,6 +636,59 @@ class ShelterViewSet(viewsets.GenericViewSet):
 
         # GET request
         inv_qs = list_shelter_invitations(shelter_id)
+=======
+    def add_member(self, request: Request, pk: str = None) -> Response:
+        serializer = MemberAddSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        shelter_id = _parse_uuid(pk)
+        shelter = get_shelter_by_id(shelter_id)
+        if not shelter:
+            raise NotFound("Shelter not found.")
+
+        try:
+            target_user = User.objects.get(id=serializer.validated_data["user_id"])
+        except User.DoesNotExist:
+            raise ValidationError({"user_id": "User not found."})
+
+        member = MemberService.add_member(
+            shelter=shelter,
+            user=target_user,
+            role=serializer.validated_data["role"],
+        )
+        return api_response(
+            success=True,
+            message="Member added successfully.",
+            data=ShelterMemberSerializer(member).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+    # --- Invitation Sub-Resource Actions ---
+
+    @extend_schema(
+        methods=["get"],
+        summary="List Shelter Invitations",
+        description="Lists all staff/volunteer invitations for a shelter.",
+        responses={200: ShelterInvitationSerializer(many=True)},
+    )
+    @extend_schema(
+        methods=["post"],
+        summary="Create Shelter Invitation",
+        description="Dispatches a tokenized staff or volunteer invitation.",
+        request=InvitationCreateSerializer,
+        responses={201: ShelterInvitationSerializer},
+    )
+    @action(detail=True, methods=["get", "post"], url_path="invitations")
+    @handle_domain_exceptions
+    def invitations(self, request: Request, pk: str = None) -> Response:
+        if request.method == "POST":
+            return self.create_invitation(request, pk)
+        return self.list_invitations(request, pk)
+
+    def list_invitations(self, request: Request, pk: str = None) -> Response:
+        shelter_id = _parse_uuid(pk)
+        invitations = list_shelter_invitations(shelter_id)
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
         status_param = request.query_params.get("status")
         if status_param:
             inv_qs = inv_qs.filter(status=status_param)
@@ -541,6 +696,32 @@ class ShelterViewSet(viewsets.GenericViewSet):
         serializer = ShelterInvitationSerializer(inv_qs, many=True)
         return api_response(data=serializer.data)
 
+<<<<<<< HEAD
+=======
+    def create_invitation(self, request: Request, pk: str = None) -> Response:
+        serializer = InvitationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        shelter_id = _parse_uuid(pk)
+        shelter = get_shelter_by_id(shelter_id)
+        if not shelter:
+            raise NotFound("Shelter not found.")
+
+        invitation = InvitationService.create_invitation(
+            shelter=shelter,
+            email=serializer.validated_data["email"],
+            role=serializer.validated_data["role"],
+            invited_by=request.user if request.user.is_authenticated else None,
+            expiry_days=serializer.validated_data.get("expiry_days", 7),
+        )
+        return api_response(
+            success=True,
+            message="Invitation created successfully.",
+            data=ShelterInvitationSerializer(invitation).data,
+            status_code=status.HTTP_201_CREATED,
+        )
+
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
 
 # --- Standalone Resource Views ---
 
@@ -557,7 +738,11 @@ class DocumentDetailAPIView(viewsets.ViewSet):
 
     @handle_domain_exceptions
     def destroy(self, request: Request, pk: str = None) -> Response:
+<<<<<<< HEAD
         doc_id = _to_uuid(pk)
+=======
+        doc_id = _parse_uuid(pk)
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
         VerificationService.remove_document(doc_id)
         return api_response(message="Document deleted successfully.")
 
@@ -585,7 +770,11 @@ class MemberDetailAPIView(viewsets.ViewSet):
         serializer = MemberUpdateSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
+<<<<<<< HEAD
         member_id = _to_uuid(pk)
+=======
+        member_id = _parse_uuid(pk)
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
         updated = MemberService.change_role(
             member_id, new_role=serializer.validated_data["role"]
         )
@@ -596,7 +785,11 @@ class MemberDetailAPIView(viewsets.ViewSet):
 
     @handle_domain_exceptions
     def destroy(self, request: Request, pk: str = None) -> Response:
+<<<<<<< HEAD
         member_id = _to_uuid(pk)
+=======
+        member_id = _parse_uuid(pk)
+>>>>>>> 2ff1d14 (test: stabilize backend with all tests passing)
         MemberService.remove_member(member_id)
         return api_response(message="Member removed successfully.")
 
