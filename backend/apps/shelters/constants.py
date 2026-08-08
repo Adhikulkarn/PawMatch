@@ -15,6 +15,16 @@ class ShelterStatus(models.TextChoices):
     ARCHIVED = "archived", _("Archived")
 
 
+class OrganizationType(models.TextChoices):
+    """Legal organization type of a shelter entity."""
+
+    NON_PROFIT = "non_profit", _("Non-Profit / NGO")
+    MUNICIPAL = "municipal", _("Municipal / Government Shelter")
+    PRIVATE = "private", _("Private Rescue / Sanctuary")
+    FOSTER_NETWORK = "foster_network", _("Foster Network")
+    OTHER = "other", _("Other")
+
+
 class VerificationStatus(models.TextChoices):
     """Workflow state machine statuses for ShelterVerification requests."""
 
@@ -33,12 +43,17 @@ class ShelterMemberRole(models.TextChoices):
     MANAGER = "manager", _("Manager")
     STAFF = "staff", _("Staff")
     VOLUNTEER = "volunteer", _("Volunteer")
+    VETERINARIAN = "veterinarian", _("Veterinarian")
+    VIEWER = "viewer", _("Viewer")
 
 
 class DocumentType(models.TextChoices):
     """Types of legal and verification documents required for shelter verification."""
 
-    REGISTRATION_CERTIFICATE = "registration_certificate", _("Registration Certificate")
+    REGISTRATION_CERTIFICATE = (
+        "registration_certificate",
+        _("Registration Certificate"),
+    )
     NGO_CERTIFICATE = "ngo_certificate", _("NGO Certificate")
     GOVERNMENT_LICENSE = "government_license", _("Government License")
     ADDRESS_PROOF = "address_proof", _("Address Proof")

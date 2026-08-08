@@ -20,7 +20,11 @@ def get_shelter_members(shelter_id: uuid.UUID) -> QuerySet[ShelterMember]:
 
 def get_user_shelter_membership(user_id: uuid.UUID) -> Optional[ShelterMember]:
     """Fetches the active shelter membership for a user if one exists."""
-    return ShelterMember.objects.filter(user_id=user_id, is_active=True).first()
+    return (
+        ShelterMember.objects.select_related("shelter", "user")
+        .filter(user_id=user_id, is_active=True)
+        .first()
+    )
 
 
 def get_shelter_owners(shelter_id: uuid.UUID) -> QuerySet[ShelterMember]:

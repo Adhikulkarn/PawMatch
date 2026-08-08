@@ -1,3 +1,1 @@
-from django.contrib import admin
-
-# Register your models here.
+# Register your audit_logs models here.
